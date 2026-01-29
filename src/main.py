@@ -116,7 +116,6 @@ while job.get_prompt():
     # Risposta e elaborazione post-risposta
     resp_messages = agentManager.generate_response(context, prompt.think, prompt.tools)
     print("Prompt done")
-    context_manager.add_messages(resp_messages)
     if prompt.commit:
         edited = workspace.commit("update")
         if prompt.commit is not None and edited != prompt.commit:
@@ -131,4 +130,5 @@ while job.get_prompt():
             job.go_back(prompt.post_flow)
     else:
         job.ia_wants_terminate = False
+    context_manager.add_messages(resp_messages)
     job.next()
