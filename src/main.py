@@ -1,4 +1,3 @@
-import os
 from langchain.tools import tool
 
 from contextManager import ContextManager
@@ -16,11 +15,19 @@ workspace = Workspace(settings, job.root, context_manager.files)
 workspace.commit("existing changes")
 writer = Writer(settings, workspace.path)
 
+def sanitize_path(filename: str) -> str:
+    filename.replace(' ', '')
+    if ".py" in filename and "/src/" not in filename:
+        file_path = workspace.path+"/src/"+filename
+    else: file_path = workspace.path+filename
+    return file_path
+
+
 def correct_in_file_examples() -> str:
     with open(settings.corrections_path, 'r', encoding='utf-8') as f:
         return f"correzioni esempio (che sono state applicate con succhesso): {f.read()}"
 
-@tool("correct_in_file", description="Correct code in a file given the path of the file starting with '/' by replacing it. read file to get the exact wrong text to be replaced and do not abbreviate with '...'. IF IN TROUBLE USE SHORTER TEXT.")
+@tool("correct_line_in_file", description="Replace a line in the file given the path of the file starting with '/', the full and complete text of the line to be replace and the full and complete text of the corrected line. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
 def correct(filepath:str, old:str, new:str) -> str:
     """Correct code in a file.
 
@@ -29,9 +36,7 @@ def correct(filepath:str, old:str, new:str) -> str:
         old (str): The code in the file to be correctd.
         new (str): The new code corrected.
     """
-    if ".py" in filepath and "/src/" not in filepath:
-        file_path = workspace.path+"/src/"+filepath
-    else: file_path = workspace.path+filepath
+    file_path = sanitize_path(filepath)
     try:
         # Read old content
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -42,7 +47,7 @@ def correct(filepath:str, old:str, new:str) -> str:
         if new_content == content: 
             print(f"[TOOL] NOT REPLACED in {filepath}")
             writer.write_in_fails(f"## NOT REPLACED \n{old} \nIN {filepath}\n\n")
-            return f"'old' is not in the file. {correct_in_file_examples()}" #  Actual file content: {content}"
+            return f"'old' is not in the file. Actual file content: ### START ### {content} ### END ###"
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
             return "Correction applied, text changed."
@@ -67,7 +72,7 @@ def write(filepath:str, text:str):
         filepath (str): The path of the file from the root.
         text (str): The text to write.
     """
-    file_path = workspace.path+filepath
+    file_path = sanitize_path(filepath)
     print(f"[TOOL] WRITING {filepath}")
     try:
         with open(file_path, 'w', encoding='utf-8') as f:
@@ -82,9 +87,7 @@ def read(filepath:str) -> str:
     Args:
         filepath (str): The path of the file from the root
     """
-    if ".py" in filepath and "/src/" not in filepath:
-        file_path = workspace.path+"/src"+filepath
-    else: file_path = workspace.path+filepath
+    file_path = sanitize_path(filepath)
     print(f"[TOOL] READING {filepath}")
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -126,4 +129,6 @@ while job.get_prompt():
     if(prompt.permit_end):
         if not job.ia_wants_terminate:
             job.go_back(prompt.post_flow)
+    else:
+        job.ia_wants_terminate = False
     job.next()
