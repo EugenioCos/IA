@@ -17,14 +17,7 @@ class Job:
         
         self.root = data["root"]
         for prompt in data["prompts"]:
-            text = prompt["text"]
-            think = prompt["think"]
-            commit = prompt["commit"]
-            permit_end = prompt["permit_end"]
-            post_flow = prompt["post_flow"]
-            context = prompt["context"]
-            tools = prompt["tools"]
-            self.prompts.append(Prompt(text, think, commit, permit_end, post_flow, context, tools))
+            self.prompts.append(Prompt(prompt))
 
     def get_prompt(self):
         if(self.current == len(self.prompts)):

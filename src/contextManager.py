@@ -1,14 +1,18 @@
 import os
+from langchain.messages import AnyMessage, AIMessage, HumanMessage, SystemMessage
+
+from data.job import Job
 
 class ContextManager:
     
-    def __init__(self, abs_path, ignore_files):
-        self.messages: list[tuple[str, str]] = []
-        self.scan_files(abs_path, ignore_files)
+    def __init__(self, job: Job, ignore_files: list[str]):
+        self.job = job
+        self.steps_messages: list[list[tuple[str, str]]] = []
+        self.scan_files(ignore_files)
 
     def get_context(self, mask: list[bool] = None) -> list[tuple[str, str]]:
         if mask is None:
-            return self.messages
+            return self.steps_messages[self.job.current]
         raise Exception("not implemented jet")
         # if len(mask) != len(self.messages):
         #     raise Exception(f"Invalid job mask, len_mask: {len(mask)} != {len(self.messages)}")
@@ -17,20 +21,30 @@ class ContextManager:
         #     for i, message in enumerate(self.messages)
         # ]
 
-    def add_messages(self, messages: list[str, str]):
-        self.messages.append(messages)
+    def add_response_messages(self, response_messages: list[tuple[str, str]], new_prompt=True):
+        if len(self.steps_messages) < self.job.current + 1:
+            self.steps_messages.append[response_messages]
+        else:
+            self.steps_messages[self.job.current] = self.steps_messages[self.job.current].extend(response_messages)
 
     def add_message(self, text: str, role:str):
-        self.messages.append((role, text))
+        if len(self.steps_messages) < self.job.current + 1:
+            self.steps_messages.append([(role, text)])
+        else: self.steps_messages[self.job.current].append((role, text))
 
-    def scan_files(self, abs_path, ignore_files: list[str]) -> None:
+    def delete_last_steps(self, to_delete: int):
+        while to_delete > 0:
+            self.steps_messages.pop()
+            to_delete = to_delete -1
+
+    def scan_files(self, ignore_files: list[str]) -> None:
         self.files = []
-        if not os.path.isabs(abs_path):
+        if not os.path.isabs(self.job.root):
             raise Exception("Path is not absolute")
-        if not os.path.isdir(abs_path):
+        if not os.path.isdir(self.job.root):
             raise Exception("Directory not found")
 
-        for root, dirs, files in os.walk(abs_path):
+        for root, dirs, files in os.walk(self.job.root):
             dirs[:] = [d for d in dirs if d not in ignore_files]
             for filename in files:
                 if filename in ignore_files:
@@ -38,5 +52,5 @@ class ContextManager:
 
                 # Process the file (e.g., read, write, etc.)
                 file_path = os.path.join(root, filename)
-                filtered = file_path.replace(abs_path, "")
+                filtered = file_path.replace(self.job.root, "")
                 self.files.append(filtered)

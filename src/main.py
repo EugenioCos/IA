@@ -10,7 +10,7 @@ from writer import Writer
 settings_path = "settings.json"
 settings = Settings(settings_path)
 job = Job(settings)
-context_manager = ContextManager(job.root, settings.ignore_files)
+context_manager = ContextManager(job, settings.ignore_files)
 workspace = Workspace(settings, job.root, context_manager.files)
 workspace.commit("existing changes")
 writer = Writer(settings, workspace.path)
@@ -27,13 +27,13 @@ def correct_in_file_examples() -> str:
     with open(settings.corrections_path, 'r', encoding='utf-8') as f:
         return f"correzioni esempio (che sono state applicate con succhesso): {f.read()}"
 
-@tool("correct_line_in_file", description="Replace a line in the file given the path of the file starting with '/', the full and complete text of the line to be replace and the full and complete text of the corrected line. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
-def correct(filepath:str, old:str, new:str) -> str:
-    """Correct code in a file.
+@tool("replace_in_file", description="Replace existing text in the file, given the path of the file starting with '/', the full and complete text to be replaced and the full and complete new text. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
+def replace(filepath:str, old:str, new:str) -> str:
+    """Replace text in a file.
 
     Args:
         filepath (str): The path of the file from the project root "/".
-        old (str): The code in the file to be correctd.
+        old (str): The existing text in the file to be replaced.
         new (str): The new code corrected.
     """
     file_path = sanitize_path(filepath)
@@ -42,7 +42,7 @@ def correct(filepath:str, old:str, new:str) -> str:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         # Correct old content
-        new_content = content.replace(old, new).strip()
+        new_content = content.replace(old.strip(), new.strip()).strip()
         # Check correction
         if new_content == content: 
             print(f"[TOOL] NOT REPLACED in {filepath}")
@@ -62,6 +62,7 @@ def list() -> list:
     """list project files.
     """
     print(f"[TOOL] LISTING FILES")
+    print(context_manager.files)
     return context_manager.files
 
 @tool("write_file", description="Write text in file given its path starting with '/'.")
@@ -88,7 +89,7 @@ def read(filepath:str) -> str:
         filepath (str): The path of the file from the root
     """
     file_path = sanitize_path(filepath)
-    print(f"[TOOL] READING {filepath}")
+    print(f"[TOOL] READING {file_path}")
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             return f.read()
@@ -103,33 +104,35 @@ def end_work():
     print(f"[TOOL] Work terminated.")
     job.ia_wants_terminate = True
 
-tools = [list, read, write, correct, end_work]
+tools = [list, read, write, replace]
 
-agentManager = AgentManager(tools, writer)
+agentManager = AgentManager(tools, end_work, writer)
 
 while job.get_prompt():
     # Preparazione contesto e prompt
     prompt = job.get_prompt()
     writer.log_prompt_in_response(prompt)
-    context = context_manager.get_context(prompt.context)
-    context.append(prompt.get_message()) # I prompt non sono preservati nei contesti successivi
-    # Risposta e elaborazione post-risposta
-    resp_messages = agentManager.generate_response(context, prompt.think, prompt.tools)
+    context_manager.add_message(prompt.text, "human")
+    context = context_manager.get_context(None) #prompt.context)
+    # Risposta
+    resp_messages = agentManager.generate_response(context, prompt)
+    writer.write_messages_in_response(resp_messages, prompt.think)
+    context_manager.add_response_messages(resp_messages)
     print("Prompt done")
-    if prompt.commit:
-        edited = workspace.commit("update")
-        if prompt.commit is not None and edited != prompt.commit:
-            if(prompt.commit): msg ="[SYSTEM] NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'correct'"
-            else: msg = "[SYSTEM] HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
-            context_manager.add_message(msg, "system")
-            print(msg)
-            job.go_back(prompt.post_flow)
-            continue
+    # Controllo modifiche effettuate
+    if prompt.commit is not None and workspace.commit("update") != prompt.commit:
+        if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'correct'"
+        else: message_text = "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
+        print(f"[SYSTEM] {message_text}")
+        context_manager.add_message(message_text, "system")
+        job.go_back(prompt.post_flow)
+        context_manager.delete_last_steps(prompt.delete_last_steps)
+        continue
+    # Controllo fine flusso
     if(prompt.permit_end):
         if not job.ia_wants_terminate:
             job.go_back(prompt.post_flow)
         else: break
     else:
         job.ia_wants_terminate = False
-    context_manager.add_messages(resp_messages)
     job.next()

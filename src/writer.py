@@ -1,6 +1,7 @@
 import json, os
 from data.settings import Settings
 from data.prompt import Prompt
+from langchain.messages import AnyMessage
 
 class Writer:
 
@@ -35,6 +36,14 @@ class Writer:
     def log_prompt_in_response(self, prompt: Prompt):
         print(str(prompt))
         self.write_in_response(str(prompt))
+
+    def write_messages_in_response(self, messages: list[tuple[str, str]], think):
+        for message in messages:
+            message_text = message[1]
+            if not think and "<think>" in message_text:
+                no_think_text = message_text.split("<think>")[0] + message_text.split("</think>")[1]
+                self.write_in_response(no_think_text)
+            else: self.write_in_response(f"[{message[0]}] {message[1]}")
 
     def create_files(self):
         os.makedirs(self.response_dir)
