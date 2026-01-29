@@ -128,6 +128,7 @@ while job.get_prompt():
     if(prompt.permit_end):
         if not job.ia_wants_terminate:
             job.go_back(prompt.post_flow)
+        else: break
     else:
         job.ia_wants_terminate = False
     context_manager.add_messages(resp_messages)
