@@ -3,6 +3,8 @@ from langchain_ollama import ChatOllama
 from langchain.agents import create_agent
 from langchain.messages import HumanMessage, AIMessage,  ToolMessage
 
+from writer import Writer
+
 class AgentManager:
     llm = ChatOllama(
         model="qwen3:8b",
@@ -23,10 +25,11 @@ class AgentManager:
             system_prompt=self.ia_base_prompt+self.ia_replace_instruct,
         )
 
-    def __init__(self, tools):
+    def __init__(self, tools, writer: Writer):
         self.tools = tools
+        self.writer = writer
 
-    def generate_response(self, messages: list[tuple[str, str]], think: bool, use_tools: bool,  output):
+    def generate_response(self, messages: list[tuple[str, str]], think: bool, use_tools: bool):
         """Generate text using Ollama's API"""
         self.create_agent(use_tools, think)
         try:
@@ -50,8 +53,7 @@ class AgentManager:
             #             continue
             #         last_message = message[1]
             #     text = text + "\n" + last_message
-            output.write(text.content)
-            output.flush()
+            self.writer.write_in_response(text.content)
             return text.content
         except Exception as e:
             raise Exception(f"Error communicating with Ollama: {str(e)}")

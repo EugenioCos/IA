@@ -16,20 +16,17 @@ class Prompt:
         self.tools = tools
         if tools: text = self.tools_usage_message + text
 
-    def log_prompt(self, out: TextIOWrapper):
-        out.writelines([
-            "\n\n######################## PROMPT ########################",
-            "\n# prompt: ", self.prompt,
-            "\n# think: ", str(self.think),
-            "\n# commit: ", str(self.commit),
-            "\n# post_flow: ", str(self.post_flow),
-            "\n# permit_end: ", str(self.permit_end),
-            "\n# context: ", str(self.context),
-            "\n# tools: ", str(self.tools),
-            "\n########################################################\n"
-        ])
-        out.flush() 
-        print(f"[PROMPT]: {self.prompt}")
+    def __str__(self):
+        return \
+        f"######################## PROMPT ######################## \
+        \n# prompt: {self.prompt} \
+        \n# think: {str(self.think)} \
+        \n# commit: {str(self.commit)} \
+        \n# post_flow: {str(self.post_flow)} \
+        \n# permit_end: {str(self.permit_end)} \
+        \n# context: {str(self.context)} \
+        \n# tools: {str(self.tools)} \
+        \n########################################################"
 
     def get_message(self):
         return ("human", self.text)

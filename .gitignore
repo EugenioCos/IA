@@ -1,9 +1,7 @@
-response/
 settings.json
-Archivio.zip
-response.md
 venv/
 __pycache__/
 .DS_Store
 jobs/*
 workspace/
+IA_INFO

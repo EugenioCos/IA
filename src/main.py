@@ -14,7 +14,7 @@ job = Job(settings)
 context_manager = ContextManager(job.root, settings.ignore_files)
 workspace = Workspace(settings, job.root, context_manager.files)
 workspace.commit("existing changes")
-writer = Writer(settings)
+writer = Writer(settings, workspace.path)
 
 def correct_in_file_examples() -> str:
     with open(settings.corrections_path, 'r', encoding='utf-8') as f:
@@ -102,29 +102,28 @@ def end_work():
 
 tools = [list, read, write, correct, end_work]
 
-agentManager = AgentManager(tools)
+agentManager = AgentManager(tools, writer)
 
-with open(settings.response_path, 'a', encoding='utf-8') as f:
-    while job.get_prompt():
-        # Preparazione contesto e prompt
-        prompt = job.get_prompt()
-        prompt.log_prompt(f)
-        context = context_manager.get_context(prompt.context)
-        context.append(prompt.get_message()) # I prompt non sono preservati nei contesti successivi
-        # Risposta e elaborazione post-risposta
-        resp_messages = agentManager.generate_response(context, prompt.think, prompt.tools, f)
-        print("Prompt done")
-        context_manager.add_messages(resp_messages)
-        if prompt.commit:
-            edited = workspace.commit("update")
-            if prompt.commit is not None and edited != prompt.commit:
-                if(prompt.commit): msg ="[SYSTEM] NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'correct'"
-                else: msg = "[SYSTEM] HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
-                context_manager.add_message(msg, "system")
-                print(msg)
-                job.go_back(prompt.post_flow)
-                continue
-        if(prompt.permit_end):
-            if not job.ia_wants_terminate:
-                job.go_back(prompt.post_flow)
-        job.next()
+while job.get_prompt():
+    # Preparazione contesto e prompt
+    prompt = job.get_prompt()
+    writer.log_prompt_in_response(prompt)
+    context = context_manager.get_context(prompt.context)
+    context.append(prompt.get_message()) # I prompt non sono preservati nei contesti successivi
+    # Risposta e elaborazione post-risposta
+    resp_messages = agentManager.generate_response(context, prompt.think, prompt.tools)
+    print("Prompt done")
+    context_manager.add_messages(resp_messages)
+    if prompt.commit:
+        edited = workspace.commit("update")
+        if prompt.commit is not None and edited != prompt.commit:
+            if(prompt.commit): msg ="[SYSTEM] NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'correct'"
+            else: msg = "[SYSTEM] HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
+            context_manager.add_message(msg, "system")
+            print(msg)
+            job.go_back(prompt.post_flow)
+            continue
+    if(prompt.permit_end):
+        if not job.ia_wants_terminate:
+            job.go_back(prompt.post_flow)
+    job.next()

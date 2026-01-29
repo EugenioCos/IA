@@ -1,32 +1,48 @@
-import json
+import json, os
 from data.settings import Settings
 from data.prompt import Prompt
 
 class Writer:
 
-    def __init__(self, settings: Settings):
-        self.settings = settings
-        self.log_settings_in_response()
-        with open(self.settings.corrections_path, 'w', encoding='utf-8') as c: # Clear/create file
-            pass
-        with open(self.settings.fails_path, 'w', encoding='utf-8') as c: # Clear/create file
-            pass
-        with open(self.settings.response_path, 'w', encoding='utf-8') as c: # Clear/create file
-            pass
+    def __init__(self, settings: Settings, branch_path:str):
+        settings = settings
+        self.response_dir = os.path.join(branch_path, settings.response_dir)
+        self.corrections_path = os.path.join(self.response_dir, "corrections.md")
+        self.fails_path = os.path.join(self.response_dir, "fails.md")
+        self.response_path = os.path.join(self.response_dir, "response.md")
+        print(self.response_path)
+        if not settings.existing_branch: self.create_files()
+        self.log_settings_in_response(settings)
 
     def write_in_response(self, text: str):
-        with open(self.settings.response_path, 'a', encoding='utf-8') as c:
-            c.write(text)
+        with open(self.response_path, 'a', encoding='utf-8') as c:
+            c.write("\n\n"+text)
+            c.flush()
     
     def write_in_corrections(self, text: str):
-        with open(self.settings.corrections_path, 'a', encoding='utf-8') as c:
-            c.write(text)
+        with open(self.corrections_path, 'a', encoding='utf-8') as c:
+            c.write("\n\n"+text)
+            c.flush()
 
     def write_in_fails(self, text: str):
-        with open(self.settings.fails_path, 'a', encoding='utf-8') as c:
-            c.write(text)
+        with open(self.fails_path, 'a', encoding='utf-8') as c:
+            c.write("\n\n"+text)
+            c.flush()
 
-    def log_settings_in_response(self):
-        with open(self.settings.response_path, 'w', encoding='utf-8') as f:
-            f.write(json.dumps(self.settings.json, indent=4))
+    def log_settings_in_response(self, settings):
+        self.write_in_response(json.dumps(settings.json, indent=4))
+
+    def log_prompt_in_response(self, prompt: Prompt):
+        print(str(prompt))
+        self.write_in_response(str(prompt))
+
+    def create_files(self):
+        os.makedirs(self.response_dir)
+        with open(self.corrections_path, 'w', encoding='utf-8') as c: # Clear/create file
+            pass
+        with open(self.fails_path, 'w', encoding='utf-8') as c: # Clear/create file
+            pass
+        with open(self.response_path, 'w', encoding='utf-8') as c: # Clear/create file
+            pass
+
     
