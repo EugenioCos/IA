@@ -1,7 +1,7 @@
-from typing import TypedDict
+import re
 from langchain_ollama import ChatOllama
 from langchain.agents import create_agent
-from langchain.messages import HumanMessage, AIMessage,  ToolMessage
+from langchain.messages import HumanMessage, AIMessage,  ToolMessage, AnyMessage
 
 from writer import Writer
 
@@ -35,25 +35,14 @@ class AgentManager:
         try:
             num_messages_before = len(messages)
             response = self.agent.invoke({"messages": messages})
-            text = response["messages"][-1]#text = ""
-            # for message in response["messages"][num_messages_before:]:
-            #     if isinstance(message, ToolMessage):
-            #         continue
-            #     elif isinstance(message, AIMessage):
-            #         if not message.content:
-            #             #print("AIMessage Tool")
-            #             continue
-            #         #print("AIMessage")
-            #         last_message=message.pretty_repr()
-            #     elif isinstance(message, HumanMessage):
-            #         continue
-            #     else:
-            #         print(type(message[1]))
-            #         if not isinstance(message[1], str):
-            #             continue
-            #         last_message = message[1]
-            #     text = text + "\n" + last_message
-            self.writer.write_in_response(text.content)
-            return text.content
+            messages: list[AnyMessage] = response["messages"][num_messages_before:]
+            text = ""
+            for message in messages:
+                if isinstance(message, ToolMessage):
+                    continue
+                text = text + "\n" + message.pretty_repr()
+            no_think_text = text.split("<think>")[0] + text.split("</think>")[1]
+            self.writer.write_in_response(no_think_text)
+            return no_think_text
         except Exception as e:
             raise Exception(f"Error communicating with Ollama: {str(e)}")
