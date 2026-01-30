@@ -37,8 +37,8 @@ class Workspace:
             self.git_cmd.checkout("HEAD", b=self.branch_name)  # Create a new branch.
         
     def init_workspace(self, project_path):
-        self.path = self.settings.workspace_path + self.branch_name
-        self.files = [file_path.replace(project_path, self.path) for file_path in self.project_files]
+        self.path = os.path.join(self.settings.workspace_path, self.branch_name)
+        self.files = [os.path.join(self.path, os.path.relpath(file_path, project_path)) for file_path in self.project_files]
         print(f"Workspace in {self.path}, from {project_path}")
         if self.settings.existing_branch is not None: return
         for i, file in enumerate(self.project_files):
@@ -52,5 +52,3 @@ class Workspace:
         self.repo.index.commit(commit_message)
         print("Commit done")
         return True
-
-                
