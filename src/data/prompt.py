@@ -20,14 +20,16 @@ class Prompt:
         if self.permit_end: self.text = self.text + self.permit_end_message
 
     def __str__(self):
-        return \
+        text = \
         f"######################## PROMPT ######################## \
+        \n# title: {self.title} \
         \n# prompt: {self.prompt} \
-        \n# think: {str(self.think)} \
-        \n# commit: {str(self.commit)} \
-        \n# reset_context: {str(self.reset_context)} \
-        \n# next_on_fail: {str(self.next_on_fail)} \
-        \n# permit_end: {str(self.permit_end)} \
-        \n# context: {str(self.context)} \
-        \n# tools: {str(self.tools)} \
-        \n########################################################"
+        \n# think: {str(self.think)}"
+        if self.commit is not None: text = text + f"\n# context: {str(self.context)}"
+        if self.commit is not None: text = text + f"\n# tools: {str(self.tools)}"
+        if self.commit is not None: text = text + f"\n# commit: {str(self.commit)} "
+        if self.commit is not None: text = text + f"\n# next_on_fail: {self.next_on_fail}"
+        if self.commit is not None: text = text + f"\n# reset_context: {self.reset_context}"
+        if self.commit is not None: text = text + f"\n# permit_end: {str(self.permit_end)}"
+        text = text + "\n########################################################"
+        return text
