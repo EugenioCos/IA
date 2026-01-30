@@ -25,7 +25,7 @@ def sanitize_path(filename: str) -> str:
 
 
 def correct_in_file_examples() -> str:
-    with open(settings.corrections_path, 'r', encoding='utf-8') as f:
+    with open(settings.get('corrections_path', 'corrections.txt'), 'r', encoding='utf-8') as f:
         return f"correzioni esempio (che sono state applicate con succhesso): {f.read()}"
 
 @tool("replace_in_file", description="Replace existing text in the file, given the path of the file starting with '/', the full and complete text to be replaced and the full and complete new text. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
