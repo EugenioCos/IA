@@ -18,6 +18,7 @@ class Job:
             raise Exception(f"Invalid job, Exception: {str(e)}")
         
         self.root = data["root"]
+        self.numero_esecuzioni = data["executions_count"]
         for i, prompt_dict in enumerate(data["prompts"]):
             prompt =  Prompt(prompt_dict)
             self.prompts.update({prompt.title: prompt})
@@ -38,5 +39,3 @@ class Job:
     
     def go_back(self, title: str):
         self.current = self.prompts_order_title_key[title]
-        
-

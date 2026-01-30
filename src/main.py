@@ -108,31 +108,32 @@ tools = [list, read, write, replace]
 
 agentManager = AgentManager(tools, end_work, writer)
 
-while job.get_prompt():
-    # Preparazione contesto e prompt
-    prompt = job.get_prompt()
-    writer.log_prompt_in_response(prompt)
-    context_manager.add_message("human", prompt.text)
-    context = context_manager.get_context(None) #prompt.context)
-    # Risposta
-    resp_messages = agentManager.generate_response(context, prompt)
-    writer.write_messages_in_response(resp_messages, prompt.think)
-    context_manager.add_response_messages(resp_messages)
-    print("Prompt done")
-    # Controllo modifiche effettuate
-    if prompt.commit is not None and workspace.commit("update") != prompt.commit:
-        if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'"
-        else: message_text = "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
-        print(f"[SYSTEM] {message_text}")
-        context_manager.add_message("system", message_text)
-        job.go_back(prompt.next_on_fail)
-        context_manager.reset_context(prompt.reset_context)
-        continue
-    # Controllo fine flusso
-    if(prompt.permit_end):
-        if not job.ia_wants_terminate:
+for i in range(0, job.numero_esecuzioni):
+    while job.get_prompt():
+        # Preparazione contesto e prompt
+        prompt = job.get_prompt()
+        writer.log_prompt_in_response(prompt)
+        context_manager.add_message("human", prompt.text)
+        context = context_manager.get_context(None) #prompt.context)
+        # Risposta
+        resp_messages = agentManager.generate_response(context, prompt)
+        writer.write_messages_in_response(resp_messages, prompt.think)
+        context_manager.add_response_messages(resp_messages)
+        print("Prompt done")
+        # Controllo fine flusso
+        if(prompt.permit_end):
+            if not job.ia_wants_terminate:
+                job.go_back(prompt.next_on_fail)
+            else: break
+        else:
+            job.ia_wants_terminate = False
+        # Controllo modifiche effettuate
+        if prompt.commit is not None and workspace.commit("update") != prompt.commit:
+            if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'"
+            else: message_text = "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
+            print(f"[SYSTEM] {message_text}")
+            context_manager.add_message("system", message_text)
             job.go_back(prompt.next_on_fail)
-        else: break
-    else:
-        job.ia_wants_terminate = False
-    job.next()
+            context_manager.reset_context(prompt.reset_context)
+            continue
+        job.next()
