@@ -18,8 +18,9 @@ writer = Writer(settings, workspace.path)
 def sanitize_path(filename: str) -> str:
     filename = filename.replace(' ', '')
     if ".py" in filename and "/src/" not in filename:
-        file_path = workspace.path+"/src/"+filename
-    else: file_path = workspace.path+filename
+        file_path = workspace.path + "/src/" + filename
+    else:
+        file_path = workspace.path + filename
     return file_path
 
 
