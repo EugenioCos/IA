@@ -17,7 +17,7 @@ class Job:
         except Exception as e:
             raise Exception(f"Invalid job, Exception: {str(e)}")
         
-        self.root = data["root"]
+        self.source = data["source"]
         self.numero_esecuzioni = data["executions_count"]
         for i, prompt_dict in enumerate(data["prompts"]):
             prompt =  Prompt(prompt_dict)

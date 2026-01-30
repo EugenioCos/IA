@@ -1,73 +1,67 @@
 import os, random, string, shutil
-from git import Repo
 
 from data.settings import Settings
+from gitBranch import GitBranch
 
 class Workspace:
 
     files: list[str] = [] # Relative path for each file
     project_files: list[str] = [] # Absolute path for each project file
-    workspace_files: list[str] = [] # Absolute path for each project file
+    workspace_files: list[str] = [] # Absolute path for each workspace file
 
     def __init__(self, settings: Settings, project_path: str, ignore_files: list[str]):
         self.settings = settings
         print(f"Project_path: {project_path}")
-        self.create_branch_name()
-        self.path = self.settings.workspace_path + self.branch_name
-        if settings.existing_branch is not None:
-            project_path = self.path
-        self.scan_files(project_path, ignore_files)
-        for file in self.files:
-            self.project_files.append(os.path.join(project_path, file))
-            self.workspace_files.append(os.path.join(self.path, file))
-            print(f"selected_file: {file}")
-        self.init_workspace()
-        self.create_branch(project_path)
+        if settings.existing_branch is None:
+            self.init_workspace(project_path, ignore_files)
+        else:
+            self.init_existing(ignore_files)
+        if settings.use_git:
+            self.branch.init(project_path, self.path, self.branch_name)
         print(f"Workspace in {self.path}")
 
-    def create_branch_name(self):
-        if self.settings.existing_branch is None:
-            random_id = ''.join(random.choices(string.digits, k=4))
-            self.branch_name = f"{self.settings.job_name}_{random_id}"
-        else:
-            self.branch_name = self.settings.existing_branch
-
-    def create_branch(self, project_path):
-        git_path = os.path.join(self.path, ".git")
-        if self.settings.existing_branch is None: 
-            project_git_path = os.path.join(project_path, ".git")
-            shutil.copytree(project_git_path, git_path)
-        self.repo = Repo(git_path)
-        self.git_cmd = self.repo.git
-        if self.settings.existing_branch is None: 
-            self.git_cmd.checkout("HEAD", b=self.branch_name)  # Create a new branch.
+    def init_workspace(self, project_path, ignore_files):
+        random_id = ''.join(random.choices(string.digits, k=4))
+        self.branch_name = f"{self.settings.job_name}_{random_id}"
+        self.path = self.settings.workspace_path + self.branch_name
+        self.init_branch(project_path, False)
+        self.scan_files(project_path, ignore_files)
+        for file in self.files:
+            workspace_file_path = os.path.join(self.path, file)
+            self.workspace_files.append(workspace_file_path)
+            os.makedirs(os.path.dirname(workspace_file_path), exist_ok=True)
+            shutil.copyfile(os.path.join(project_path, file), workspace_file_path)
         
-    def init_workspace(self):
-        if self.settings.existing_branch is not None: return
-        for i, file in enumerate(self.project_files):
-            os.makedirs(os.path.dirname(self.workspace_files[i]), exist_ok=True)
-            shutil.copyfile(file, self.workspace_files[i])
+    def init_existing(self, project_path, ignore_files):
+        self.branch_name = self.settings.existing_branch
+        self.path = self.settings.workspace_path + self.branch_name
+        self.init_branch(project_path, True)
+        self.scan_files(self.path, ignore_files)
+        for file in self.files:
+            workspace_file_path = os.path.join(self.path, file)
+            self.workspace_files.append(workspace_file_path)
+
+    def init_branch(self, project_path, create):
+        if self.settings.use_git: self.branch = GitBranch(project_path, create)
+        else: self.branch = None
 
     def commit(self, commit_message: str) -> bool:
-        self.repo.index.add(self.workspace_files)
-        if '.' not in self.git_cmd.diff("--cached", "--name-only"):
-            return False
-        self.repo.index.commit(commit_message)
-        print("Commit done")
-        return True
+        if not self.settings.use_git:
+            print("Invalid git instruction with no git allowed, check settings.json and job definition.")
+            exit()
+        return self.branch.commit(commit_message, self.workspace_files)
     
     def scan_files(self, root_path: str, ignore_files: list[str]) -> None:
         if not os.path.isabs(root_path):
             raise Exception("Path is not absolute")
         if not os.path.isdir(root_path):
             raise Exception("Directory not found")
-
+        ignore_list = ignore_files + self.branch.get_ignore_files()
         for root, dirs, files in os.walk(root_path):
-            dirs[:] = [d for d in dirs if d not in ignore_files]
+            dirs[:] = [d for d in dirs if d not in ignore_list]
             for filename in files:
                 if filename in ignore_files:
                     continue
-
                 # Process the file (e.g., read, write, etc.)
                 file_path = os.path.join(root, filename)
                 filtered = file_path.replace(root_path+"/", "")

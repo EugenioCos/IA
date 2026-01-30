@@ -11,7 +11,7 @@ from writer import Writer
 settings_path = "settings.json"
 settings = Settings(settings_path)
 job = Job(settings)
-workspace = Workspace(settings, job.root, settings.ignore_files)
+workspace = Workspace(settings, job.source, settings.ignore_files)
 workspace.commit("existing changes")
 writer = Writer(settings, workspace.path)
 
@@ -24,7 +24,7 @@ def correct_in_file_examples() -> str:
     with open(settings.corrections_path, 'r', encoding='utf-8') as f:
         return f"correzioni esempio (che sono state applicate con succhesso): {f.read()}"
 
-@tool("replace_in_file", description="Replace existing text in the file, given the path of the file starting with '/', the full and complete text to be replaced and the full and complete new text. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
+@tool("replace_in_file", description="Replace existing text in the file, given the path of the file STARTING FROM THE PROJECT ROOT, the full and complete text to be replaced and the full and complete new text. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
 def replace(filepath:str, old:str, new:str) -> str:
     """Replace text in a file.
 
@@ -51,7 +51,7 @@ def replace(filepath:str, old:str, new:str) -> str:
             f.write(new_content)
             return "Correction applied, text changed."
     except Exception as e:
-        print(f"[TOOL] Error replacing {old} with {new}in {filepath}")
+        print(f"[TOOL] Failed replacing in {filepath}")
         return "Path incorrect, be sure to use a full path"
 
 @tool("list_files", description="List all project files.")
