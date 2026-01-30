@@ -13,13 +13,12 @@ class ContextManager:
     def get_context(self, mask: list[bool] = None) -> list[tuple[str, str]]:
         if mask is None:
             return self.steps_messages[self.job.current]
-        raise Exception("not implemented yet")
-        # if len(mask) != len(self.messages):
-        #     raise Exception(f"Invalid job mask, len_mask: {len(mask)} != {len(self.messages)}")
-        # return [
-        #     message if mask[i] else None
-        #     for i, message in enumerate(self.messages)
-        # ]
+        if len(mask) != len(self.steps_messages[self.job.current]):
+            raise Exception(f"Invalid job mask, len_mask: {len(mask)} != {len(self.steps_messages[self.job.current])}")
+        return [
+            message if mask[i] else None
+            for i, message in enumerate(self.steps_messages[self.job.current])
+        ]
 
     def add_response_messages(self, response_messages: list[tuple[str, str]]):
         if len(self.steps_messages) < self.job.current + 1:
