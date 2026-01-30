@@ -28,7 +28,8 @@ def correct_in_file_examples() -> str:
         return f"correzioni esempio (che sono state applicate con succhesso): {f.read()}"
 
 @tool("replace_in_file", description="Replace existing text in the file, given the path of the file starting with '/', the full and complete text to be replaced and the full and complete new text. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
-def replace(filepath:str, old:str, new:str) -> str:
+@tool("replace_in_file", description="Replace existing text in the file, given the path of the file starting with '/', the full and complete text to be replaced and the full and complete new text. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
+def replace_in_file(filepath:str, old:str, new:str) -> str:
     """Replace text in a file.
 
     Args:
