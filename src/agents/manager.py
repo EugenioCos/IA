@@ -32,11 +32,21 @@ class AgentManager:
         agentWrapper = self.agents.get_agent_wrapper(prompt.agent_name)
         extra_tools = [] if not prompt.permit_end else [self.end_work_tool]
         return agentWrapper.get_agent(prompt, self.llm, extra_tools)
+    
+    def filter_tool_calls(self, tool_calls):
+        filtered = []
+        for tool_call in tool_calls:
+            if tool_call["name"] != 'replace_in_file': continue
+            filtered.append(tool_call)
+        return tool_calls if len(tool_calls) > 0 else None
 
     def filter_response(self, response_messages: list[AnyMessage]) -> list[str, str]:
         filtered: list[str, str] = []
         for message in response_messages:
             if isinstance(message, AIMessage):
+                if message.tool_calls:
+                    message.tool_calls = self.filter_tool_calls(message.tool_calls)
+                    if message.tool_calls is None: continue
                 filtered.append(("assistant", message.pretty_repr()))
             elif isinstance(message, ToolMessage):
                 continue
