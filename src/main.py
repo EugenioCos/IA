@@ -38,6 +38,8 @@ def replace(filepath:str, old:str, new:str) -> str:
         new (str): The new code corrected.
     """
     file_path = sanitize_path(filepath)
+    if not file_path.startswith('/'):  # Ensure absolute path
+        file_path = '/' + file_path
     try:
         # Read old content
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -75,6 +77,8 @@ def write(filepath:str, text:str):
         text (str): The text to write.
     """
     file_path = sanitize_path(filepath)
+    if not file_path.startswith('/'):  # Ensure absolute path
+        file_path = '/' + file_path
     print(f"[TOOL] WRITING {filepath}")
     try:
         with open(file_path, 'w', encoding='utf-8') as f:
@@ -90,6 +94,8 @@ def read(filepath:str) -> str:
         filepath (str): The path of the file from the root
     """
     file_path = sanitize_path(filepath)
+    if not file_path.startswith('/'):  # Ensure absolute path
+        file_path = '/' + file_path
     print(f"[TOOL] READING {file_path}")
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
