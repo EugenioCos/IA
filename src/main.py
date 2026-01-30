@@ -16,7 +16,7 @@ workspace.commit("existing changes")
 writer = Writer(settings, workspace.path)
 
 def sanitize_path(filename: str) -> str:
-    filename.replace(' ', '')
+    filename = filename.replace(' ', '')
     if ".py" in filename and "/src/" not in filename:
         file_path = workspace.path+"/src/"+filename
     else: file_path = workspace.path+filename
@@ -48,11 +48,11 @@ def replace(filepath:str, old:str, new:str) -> str:
             print(f"[TOOL] NOT REPLACED in {filepath}")
             writer.write_in_fails(f"## NOT REPLACED \n{old} \nIN {filepath}\n\n")
             return f"Failed, be sure 'old' match some text in the actual file content: ### START ### {content} ### END ###"
+        writer.write_in_corrections(f"# REPLACED \nwrong: {old} \n\ncorrect: {new}\n\n")
+        print(f"[TOOL] REPLACED IN {filepath}")
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
             return "Correction applied, text changed."
-        writer.write_in_corrections(f"# REPLACED \nwrong: {old} \n\ncorrect: {new}\n\n")
-        print(f"[TOOL] REPLACED IN {filepath}")
     except Exception as e:
         print(f"[TOOL] Error replacing {old} with {new}in {filepath}")
         return "Path incorrect, be sure to use a full path"
