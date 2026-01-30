@@ -33,9 +33,9 @@ class ContextManager:
             self.steps_messages.append([(role, text)])
         else: self.steps_messages[index].append((role, text))
 
-    def delete_last_steps(self, to_delete: int | None):
-        if to_delete is None: return
-        self.steps_messages = self.steps_messages[:to_delete]
+    def reset_context(self, title:str):
+        reset_index = self.job.get_prompt_index(title)
+        self.steps_messages = self.steps_messages[:reset_index]
 
     def scan_files(self, ignore_files: list[str]) -> None:
         self.files = []

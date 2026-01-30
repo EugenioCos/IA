@@ -6,7 +6,9 @@ from data.prompt import Prompt
 class Job:
 
     ia_wants_terminate = False
-    prompts: list[Prompt] = []
+    prompts: dict[str, Prompt] = {}
+    prompts_order_int_key: dict[str, int] = {}
+    prompts_order_title_key: dict[str, int] = {}
     current = 0
 
     def __init__(self, settings: Settings):
@@ -16,20 +18,25 @@ class Job:
             raise Exception(f"Invalid job, Exception: {str(e)}")
         
         self.root = data["root"]
-        for prompt in data["prompts"]:
-            self.prompts.append(Prompt(prompt))
+        for i, prompt_dict in enumerate(data["prompts"]):
+            prompt =  Prompt(prompt_dict)
+            self.prompts.update({prompt.title: prompt})
+            self.prompts_order_title_key.update({prompt.title: i})
+            self.prompts_order_int_key.update({i: prompt.title})
 
     def get_prompt(self):
-        if(self.current == len(self.prompts)):
+        if(self.current >= len(self.prompts)):
             return None
-        return self.prompts[self.current]
+        prompt_index = self.prompts_order_int_key[self.current]
+        return self.prompts.get(prompt_index)
+    
+    def get_prompt_index(self, title: str):
+        return self.prompts_order_title_key.get(title)
     
     def next(self):
         self.current = self.current + 1
     
-    def go_back(self, diff):
-        save = self.current
-        while self.current - save != diff:
-            self.current = self.current - 1
+    def go_back(self, title: str):
+        self.current = self.prompts_order_title_key[title]
         
 

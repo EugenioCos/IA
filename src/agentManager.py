@@ -11,7 +11,7 @@ class AgentManager:
         model="qwen3:8b",
         temperature=0.,
         reasoning=False,
-        num_predict=-1
+        num_predict=-8192
         # other params...
     )
 
@@ -52,11 +52,15 @@ class AgentManager:
     def generate_response(self, messages: list[AnyMessage], prompt: Prompt) -> list[tuple[str,str]]:
         """Generate text using Ollama's API"""
         self.create_agent(prompt)
-        try:
-            num_messages_before = len(messages)
-            response = self.agent.invoke({"messages": messages})
-            response_messages: list[AnyMessage] = response["messages"][num_messages_before:]
-            filtered_response_messages = self.filter_response(response_messages)
-            return filtered_response_messages
-        except Exception as e:
-            raise Exception(f"Error communicating with Ollama: {str(e)}")
+        try_count = 0 # casi isolati di connessione instabile
+        while(True):
+            try:
+                num_messages_before = len(messages)
+                response = self.agent.invoke({"messages": messages})
+                response_messages: list[AnyMessage] = response["messages"][num_messages_before:]
+                filtered_response_messages = self.filter_response(response_messages)
+                return filtered_response_messages
+            except Exception as e:
+                print(f"Error communicating with Ollama: {str(e)}")
+                try_count = try_count + 1
+                if try_count == 2: exit()

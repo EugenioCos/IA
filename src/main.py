@@ -121,17 +121,17 @@ while job.get_prompt():
     print("Prompt done")
     # Controllo modifiche effettuate
     if prompt.commit is not None and workspace.commit("update") != prompt.commit:
-        if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'correct'"
+        if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'"
         else: message_text = "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
         print(f"[SYSTEM] {message_text}")
         context_manager.add_message("system", message_text)
-        job.go_back(prompt.post_flow)
-        context_manager.delete_last_steps(prompt.delete_last_steps)
+        job.go_back(prompt.next_on_fail)
+        context_manager.reset_context(prompt.reset_context)
         continue
     # Controllo fine flusso
     if(prompt.permit_end):
         if not job.ia_wants_terminate:
-            job.go_back(prompt.post_flow)
+            job.go_back(prompt.next_on_fail)
         else: break
     else:
         job.ia_wants_terminate = False
