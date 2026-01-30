@@ -17,10 +17,10 @@ writer = Writer(settings, workspace.path)
 
 def sanitize_path(filename: str) -> str:
     filename = filename.replace(' ', '')
-    if ".py" in filename and "/src/" not in filename:
-        file_path = os.path.join(workspace.path, "src", filename)
-    else:
+    if filename.startswith("src/"):
         file_path = os.path.join(workspace.path, filename)
+    else:
+        file_path = os.path.join(workspace.path, "src", filename)
     return file_path
 
 
@@ -29,36 +29,6 @@ def correct_in_file_examples() -> str:
         return f"correzioni esempio (che sono state applicate con succhesso): {f.read()}"
 
 @tool("replace_in_file", description="Replace existing text in the file, given the path of the file starting with '/', the full and complete text to be replaced and the full and complete new text. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
-def replace(filepath:str, old:str, new:str) -> str:
-    """Replace text in a file.
-
-    Args:
-        filepath (str): The path of the file from the project root "/".
-        old (str): The existing text in the file to be replaced.
-        new (str): The new code corrected.
-    """
-    file_path = sanitize_path(filepath)
-    if not file_path.startswith('/'):  # Ensure absolute path
-        file_path = '/' + file_path
-    try:
-        # Read old content
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        # Correct old content
-        new_content = content.replace(old.strip(), new.strip()).strip()
-        # Check correction
-        if new_content == content: 
-            print(f"[TOOL] NOT REPLACED in {filepath}")
-            writer.write_in_fails(f"## NOT REPLACED \n{old} \nIN {filepath}\n\n")
-            return f"Failed, be sure 'old' match some text in the actual file content: ### START ### {content} ### END ###"
-        writer.write_in_corrections(f"# REPLACED \nwrong: {old} \n\ncorrect: {new}\n\n")
-        print(f"[TOOL] REPLACED IN {filepath}")
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(new_content)
-            return "Correction applied, text changed."
-    except Exception as e:
-        print(f"[TOOL] Error replacing {old} with {new}in {filepath}")
-        return "Path incorrect, be sure to use a full path"
 
 @tool("list_files", description="List all project files.")
 def list() -> list:

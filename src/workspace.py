@@ -11,7 +11,7 @@ class Workspace:
         print(f"Project_path: {project_path}")
         self.project_files: list[str] = []
         for file in files:
-            self.project_files.append(project_path+file)
+            self.project_files.append(os.path.join(project_path, file))
         for file in self.project_files:
             print(f"project_file: {file}")
         self.create_branch_name()
