@@ -47,7 +47,7 @@ def replace(filepath:str, old:str, new:str) -> str:
         if new_content == content: 
             print(f"[TOOL] NOT REPLACED in {filepath}")
             writer.write_in_fails(f"## NOT REPLACED \n{old} \nIN {filepath}\n\n")
-            return f"'old' is not in the file. Actual file content: ### START ### {content} ### END ###"
+            return f"Failed, be sure 'old' match some text in the actual file content: ### START ### {content} ### END ###"
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
             return "Correction applied, text changed."
@@ -112,7 +112,7 @@ while job.get_prompt():
     # Preparazione contesto e prompt
     prompt = job.get_prompt()
     writer.log_prompt_in_response(prompt)
-    context_manager.add_message(prompt.text, "human")
+    context_manager.add_message("human", prompt.text)
     context = context_manager.get_context(None) #prompt.context)
     # Risposta
     resp_messages = agentManager.generate_response(context, prompt)
@@ -124,7 +124,7 @@ while job.get_prompt():
         if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'correct'"
         else: message_text = "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
         print(f"[SYSTEM] {message_text}")
-        context_manager.add_message(message_text, "system")
+        context_manager.add_message("system", message_text)
         job.go_back(prompt.post_flow)
         context_manager.delete_last_steps(prompt.delete_last_steps)
         continue

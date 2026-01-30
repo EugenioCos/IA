@@ -13,7 +13,7 @@ class ContextManager:
     def get_context(self, mask: list[bool] = None) -> list[tuple[str, str]]:
         if mask is None:
             return self.steps_messages[self.job.current]
-        raise Exception("not implemented jet")
+        raise Exception("not implemented yet")
         # if len(mask) != len(self.messages):
         #     raise Exception(f"Invalid job mask, len_mask: {len(mask)} != {len(self.messages)}")
         # return [
@@ -21,21 +21,21 @@ class ContextManager:
         #     for i, message in enumerate(self.messages)
         # ]
 
-    def add_response_messages(self, response_messages: list[tuple[str, str]], new_prompt=True):
+    def add_response_messages(self, response_messages: list[tuple[str, str]]):
         if len(self.steps_messages) < self.job.current + 1:
-            self.steps_messages.append[response_messages]
+            self.steps_messages.append(response_messages)
         else:
-            self.steps_messages[self.job.current] = self.steps_messages[self.job.current].extend(response_messages)
+            self.steps_messages[self.job.current].extend(response_messages)
 
-    def add_message(self, text: str, role:str):
-        if len(self.steps_messages) < self.job.current + 1:
+    def add_message(self, role:str, text: str):
+        index = self.job.current
+        if len(self.steps_messages) < index + 1:
             self.steps_messages.append([(role, text)])
-        else: self.steps_messages[self.job.current].append((role, text))
+        else: self.steps_messages[index].append((role, text))
 
-    def delete_last_steps(self, to_delete: int):
-        while to_delete > 0:
-            self.steps_messages.pop()
-            to_delete = to_delete -1
+    def delete_last_steps(self, to_delete: int | None):
+        if to_delete is None: return
+        self.steps_messages = self.steps_messages[:to_delete]
 
     def scan_files(self, ignore_files: list[str]) -> None:
         self.files = []
