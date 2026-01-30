@@ -31,7 +31,7 @@ class Workspace:
             project_git_path = os.path.join(project_path, ".git")
             shutil.copytree(project_git_path, git_path)
         self.repo = Repo(git_path)
-        self.git_cmd = self.repo.git
+        self.git_cmd: Git = self.repo.git
         self.git_cmd.checkout("HEAD", b=self.branch_name)  # Create a new branch.
         
     def init_workspace(self, project_path):
@@ -45,9 +45,10 @@ class Workspace:
 
     def commit(self, commit_message: str) -> bool:
         self.repo.index.add(self.files)
-        if not self.git_cmd.diff("--cached", "--name-only"):
+        if '.' not in self.git_cmd.diff("--cached", "--name-only"):
             return False
         self.repo.index.commit(commit_message)
+        print("Commit done")
         return True
 
                 

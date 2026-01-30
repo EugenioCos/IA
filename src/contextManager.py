@@ -21,18 +21,21 @@ class ContextManager:
         #     for i, message in enumerate(self.messages)
         # ]
 
-    def add_response_messages(self, response_messages: list[tuple[str, str]], new_prompt=True):
+    def add_response_messages(self, response_messages: list[tuple[str, str]]):
         if len(self.steps_messages) < self.job.current + 1:
             self.steps_messages.append[response_messages]
         else:
             self.steps_messages[self.job.current] = self.steps_messages[self.job.current].extend(response_messages)
 
-    def add_message(self, text: str, role:str):
-        if len(self.steps_messages) < self.job.current + 1:
+    def add_message(self, role:str, text: str):
+        index = self.job.current
+        print(f"index: {index}, steps: {len(self.steps_messages)}")
+        if len(self.steps_messages) < index + 1:
             self.steps_messages.append([(role, text)])
-        else: self.steps_messages[self.job.current].append((role, text))
+        else: self.steps_messages[index].append((role, text))
 
-    def delete_last_steps(self, to_delete: int):
+    def delete_last_steps(self, to_delete: int | None):
+        if to_delete is None: return
         while to_delete > 0:
             self.steps_messages.pop()
             to_delete = to_delete -1

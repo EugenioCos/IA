@@ -1,0 +1,21 @@
+{
+    "job_name": "job",
+    "existing_branch": null,
+    "model": "qwen3:8b",
+    "response_dir": "IA_INFO/",
+    "workspace_path": "/Users/ab/Documents/python/IA/workspace/",
+    "ignore_files": [
+        "__pycache__",
+        "venv",
+        "jobs",
+        "response.md",
+        "src.zip",
+        "test",
+        ".DS_Store", 
+        ".continue",
+        ".git",
+        "Archivio.zip",
+        "workspace",
+        "IA_INFO"
+    ]
+}
