@@ -1,27 +1,24 @@
+import os
 from langchain.tools import tool
 
-from contextManager import ContextManager
+from agents.contextManager import ContextManager
 from data.settings import Settings
 from data.job import Job
-from agentManager import AgentManager
+from agents.manager import AgentManager
 from workspace import Workspace
 from writer import Writer
 
 settings_path = "settings.json"
 settings = Settings(settings_path)
 job = Job(settings)
-context_manager = ContextManager(job, settings.ignore_files)
-workspace = Workspace(settings, job.root, context_manager.files)
+workspace = Workspace(settings, job.root, settings.ignore_files)
 workspace.commit("existing changes")
 writer = Writer(settings, workspace.path)
 
 def sanitize_path(filename: str) -> str:
     filename = filename.replace(' ', '')
-    if ".py" in filename and "/src/" not in filename:
-        file_path = workspace.path+"/src/"+filename
-    else: file_path = workspace.path+filename
-    return file_path
-
+    if filename.startswith('/'): filename = filename[1:]
+    return os.path.join(workspace.path, filename)
 
 def correct_in_file_examples() -> str:
     with open(settings.corrections_path, 'r', encoding='utf-8') as f:
@@ -62,8 +59,8 @@ def list() -> list:
     """list project files.
     """
     print(f"[TOOL] LISTING FILES")
-    print(context_manager.files)
-    return context_manager.files
+    print(workspace.files)
+    return workspace.files
 
 @tool("write_file", description="Write text in file given its path starting with '/'.")
 def write(filepath:str, text:str):
@@ -89,7 +86,7 @@ def read(filepath:str) -> str:
         filepath (str): The path of the file from the root
     """
     file_path = sanitize_path(filepath)
-    print(f"[TOOL] READING {file_path}")
+    print(f"[TOOL] READING {filepath}")
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             return f.read()
@@ -104,36 +101,8 @@ def end_work():
     print(f"[TOOL] Work terminated.")
     job.ia_wants_terminate = True
 
-tools = [list, read, write, replace]
+write_tools = [write, replace]
+read_tools = [list, read]
 
-agentManager = AgentManager(tools, end_work, writer)
-
-for i in range(0, job.numero_esecuzioni):
-    while job.get_prompt():
-        # Preparazione contesto e prompt
-        prompt = job.get_prompt()
-        writer.log_prompt_in_response(prompt)
-        context_manager.add_message("human", prompt.text)
-        context = context_manager.get_context(None) #prompt.context)
-        # Risposta
-        resp_messages = agentManager.generate_response(context, prompt)
-        writer.write_messages_in_response(resp_messages, prompt.think)
-        context_manager.add_response_messages(resp_messages)
-        print("Prompt done")
-        # Controllo fine flusso
-        if(prompt.permit_end):
-            if not job.ia_wants_terminate:
-                job.go_back(prompt.next_on_fail)
-            else: break
-        else:
-            job.ia_wants_terminate = False
-        # Controllo modifiche effettuate
-        if prompt.commit is not None and workspace.commit("update") != prompt.commit:
-            if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'"
-            else: message_text = "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
-            print(f"[SYSTEM] {message_text}")
-            context_manager.add_message("system", message_text)
-            job.go_back(prompt.next_on_fail)
-            context_manager.reset_context(prompt.reset_context)
-            continue
-        job.next()
+agents_manager = AgentManager(writer, read_tools, write_tools, end_work)
+agents_manager.chat(job, writer, workspace)

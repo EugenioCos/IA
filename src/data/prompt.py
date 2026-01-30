@@ -7,6 +7,7 @@ class Prompt:
     
     def __init__(self, prompt: dict):
         self.title: str = prompt["title"]
+        self.agent_name: str = prompt["agent"]
         self.text: str = prompt["text"]
         self.prompt = self.text
         self.think: bool = prompt["think"]
@@ -23,6 +24,7 @@ class Prompt:
         text = \
         f"######################## PROMPT ######################## \
         \n# title: {self.title} \
+        \n# agent_name: {self.agent_name} \
         \n# prompt: {self.prompt} \
         \n# think: {str(self.think)}"
         if self.commit is not None: text = text + f"\n# context: {str(self.context)}"
