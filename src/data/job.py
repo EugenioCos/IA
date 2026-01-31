@@ -6,6 +6,7 @@ from data.prompt import Prompt
 class Job:
 
     ia_wants_terminate = False
+    ia_failed = False
     prompts: dict[str, Prompt] = {}
     prompts_order_int_key: dict[str, int] = {}
     prompts_order_title_key: dict[str, int] = {}

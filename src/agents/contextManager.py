@@ -31,5 +31,8 @@ class ContextManager:
     def add_message(self, agent_name: str, role: str, text: str):
         self.agents_messages[agent_name].append((role, text))
 
-    def reset_context(self, agent_name: str, title:str):
-        self.agents_messages[agent_name] = []
+    def reset_context(self, agents_names: list[str]):
+        if agents_names is None: return
+        for agent_name in agents_names:
+            self.agents_messages.pop(agent_name)
+            self.agents_messages.update({agent_name: []})

@@ -13,8 +13,10 @@ class Prompt:
         self.think: bool = prompt["think"]
         self.commit = prompt.get("commit")
         self.permit_end = prompt.get("permit_end")
+        self.permit_fail = prompt.get("permit_fail")
         self.next_on_fail = prompt.get("next_on_fail")
-        self.reset_context = prompt.get("reset_context")
+        self.reset_on_success = prompt.get("reset_on_success")
+        self.reset_on_fail = prompt.get("reset_on_fail")
         self.context = prompt.get("context")
         self.tools = prompt.get("tools")
         if self.tools: self.text = self.tools_usage_message + self.text
@@ -27,11 +29,13 @@ class Prompt:
         \n# agent_name: {self.agent_name} \
         \n# prompt: {self.prompt} \
         \n# think: {str(self.think)}"
-        if self.commit is not None: text = text + f"\n# context: {str(self.context)}"
-        if self.commit is not None: text = text + f"\n# tools: {str(self.tools)}"
+        if self.context is not None: text = text + f"\n# context: {str(self.context)}"
+        if self.tools is not None: text = text + f"\n# tools: {str(self.tools)}"
         if self.commit is not None: text = text + f"\n# commit: {str(self.commit)} "
-        if self.commit is not None: text = text + f"\n# next_on_fail: {self.next_on_fail}"
-        if self.commit is not None: text = text + f"\n# reset_context: {self.reset_context}"
-        if self.commit is not None: text = text + f"\n# permit_end: {str(self.permit_end)}"
+        if self.next_on_fail is not None: text = text + f"\n# next_on_fail: {self.next_on_fail}"
+        if self.reset_on_success is not None: text = text + f"\n# reset_on_success: {str(self.reset_on_success)}"
+        if self.reset_on_fail is not None: text = text + f"\n# reset_on_fail: {str(self.reset_on_fail)}"
+        if self.permit_end is not None: text = text + f"\n# permit_end: {str(self.permit_end)}"
+        if self.permit_fail is not None: text = text + f"\n# permit_fail: {str(self.permit_fail)}"
         text = text + "\n########################################################"
         return text
