@@ -2,9 +2,10 @@ import os
 from langchain.tools import tool
 
 from agents.contextManager import ContextManager
+from agents.manager import AgentManager
 from data.settings import Settings
 from data.job import Job
-from agents.manager import AgentManager
+from data.replaces import Replaces
 from workspace import Workspace
 from writer import Writer
 
@@ -20,9 +21,7 @@ def sanitize_path(filename: str) -> str:
     if filename.startswith('/'): filename = filename[1:]
     return os.path.join(workspace.path, filename)
 
-def correct_in_file_examples() -> str:
-    with open(settings.corrections_path, 'r', encoding='utf-8') as f:
-        return f"correzioni esempio (che sono state applicate con succhesso): {f.read()}"
+replaces = Replaces(sanitize_path)
 
 @tool("replace_in_file", description="Replace existing text in the file, given the path of the file STARTING FROM THE PROJECT ROOT, the full and complete text to be replaced and the full and complete new text. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
 def replace(filepath:str, old:str, new:str) -> str:
@@ -33,26 +32,18 @@ def replace(filepath:str, old:str, new:str) -> str:
         old (str): The existing text in the file to be replaced.
         new (str): The new code corrected.
     """
-    file_path = sanitize_path(filepath)
-    try:
-        # Read old content
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        # Correct old content
-        new_content = content.replace(old.strip(), new.strip()).strip()
-        # Check correction
-        if new_content == content: 
-            print(f"[TOOL] NOT REPLACED in {filepath}")
-            writer.write_in_fails(f"## NOT REPLACED \n{old} \nIN {filepath}\n\n")
-            return f"Failed, be sure 'old' match some text in the actual file content: ### START ### {content} ### END ###"
+    tmp = replaces.replace(filepath, old, new)
+    if "Failed" in tmp:
+        print(f"[TOOL] NOT REPLACED in {filepath}")
+        writer.write_in_fails(f"## NOT REPLACED \n{old} \nIN {filepath}\n\n")
+        return f"{tmp}, be sure 'old' match some text in the actual file content, READ THE ORIGINAL FILE AND MATCH THE SAME EXACT TEXT."
+    if "applied" in tmp:
         writer.write_in_corrections(f"# REPLACED \nwrong: {old} \n\ncorrect: {new}\n\n")
         print(f"[TOOL] REPLACED IN {filepath}")
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(new_content)
-            return "Correction applied, text changed."
-    except Exception as e:
-        print(f"[TOOL] Failed replacing in {filepath}")
-        return "Path incorrect, be sure to use a full path"
+        replaces.add_replace(filepath, old, new)
+    else:
+        print(f"[TOOL] Not found: {filepath}")
+    return tmp
 
 @tool("list_files", description="List all project files.")
 def list() -> list:
