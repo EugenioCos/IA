@@ -27,7 +27,7 @@ class Replaces:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             # Correct old content
-            new_content = content.replace(old.strip(), new.strip()).strip()
+            new_content = content.replace(old.strip(), new.strip())
             # Check correction
             if new_content == content: 
                 return "Failed"

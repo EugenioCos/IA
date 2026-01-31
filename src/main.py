@@ -23,7 +23,7 @@ def sanitize_path(filename: str) -> str:
 
 replaces = Replaces(sanitize_path)
 
-@tool("replace_in_file", description="Replace existing text in the file, given the path of the file STARTING FROM THE PROJECT ROOT, the full and complete text to be replaced and the full and complete new text. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
+@tool("replace_in_file", description="Replace existing text in the file, given the path of the file (USE THE SAME PATH PROVIDED BY LIST_FILES TOOL), the full and complete text to be replaced and the full and complete new text. DO NOT ABBREVIATE WITH '...'. IF IN TROUBLE USE SHORTER TEXT.")
 def replace(filepath:str, old:str, new:str) -> str:
     """Replace text in a file.
 
@@ -36,7 +36,7 @@ def replace(filepath:str, old:str, new:str) -> str:
     if "Failed" in tmp:
         print(f"[TOOL] NOT REPLACED in {filepath}")
         writer.write_in_fails(f"## NOT REPLACED \n{old} \nIN {filepath}\n\n")
-        return f"{tmp}, be sure 'old' match some text in the actual file content, READ THE ORIGINAL FILE AND MATCH THE SAME EXACT TEXT."
+        return f"{tmp} replace in {filepath} be sure 'old' match some text in the actual file content, READ THE ORIGINAL FILE AND MATCH THE SAME EXACT TEXT."
     if "applied" in tmp:
         writer.write_in_corrections(f"# REPLACED \nwrong: {old} \n\ncorrect: {new}\n\n")
         print(f"[TOOL] REPLACED IN {filepath}")
@@ -95,5 +95,7 @@ def end_work():
 write_tools = [write, replace]
 read_tools = [list, read]
 
-agents_manager = AgentManager(writer, read_tools, write_tools, end_work)
-agents_manager.chat(job, writer, workspace)
+for i in range(0, job.numero_esecuzioni):
+    agents_manager = AgentManager(writer, read_tools, write_tools, end_work)
+    agents_manager.chat(job, writer, workspace)
+    replaces.clear()

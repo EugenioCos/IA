@@ -15,7 +15,7 @@ class Workspace:
         if settings.existing_branch is None:
             self.init_workspace(project_path, ignore_files)
         else:
-            self.init_existing(ignore_files)
+            self.init_existing(project_path, ignore_files)
         if settings.use_git:
             self.branch.init(project_path, self.path, self.branch_name)
         print(f"Workspace in {self.path}")
@@ -34,7 +34,7 @@ class Workspace:
         
     def init_existing(self, project_path, ignore_files):
         self.branch_name = self.settings.existing_branch
-        self.path = self.settings.workspace_path + self.branch_name
+        self.path = os.path.join(self.settings.workspace_path, self.branch_name)
         self.init_branch(project_path, True)
         self.scan_files(self.path, ignore_files)
         for file in self.files:
@@ -53,9 +53,10 @@ class Workspace:
     
     def scan_files(self, root_path: str, ignore_files: list[str]) -> None:
         if not os.path.isabs(root_path):
-            raise Exception("Path is not absolute")
+            raise Exception(f"Path is not absolute {root_path}")
         if not os.path.isdir(root_path):
-            raise Exception("Directory not found")
+            print(f"[ERROR] Directory not found {root_path}")
+            exit()
         ignore_list = ignore_files + self.branch.get_ignore_files()
         for root, dirs, files in os.walk(root_path):
             dirs[:] = [d for d in dirs if d not in ignore_list]
