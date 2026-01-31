@@ -13,7 +13,7 @@ class AgentManager:
         model="qwen3:8b",
         temperature=0.,
         reasoning=False,
-        num_predict=-8192
+        num_predict=8192
         # other params...
     )
 

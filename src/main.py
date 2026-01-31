@@ -50,7 +50,6 @@ def list() -> list:
     """list project files.
     """
     print(f"[TOOL] LISTING FILES")
-    print(workspace.files)
     return workspace.files
 
 @tool("write_file", description="Write text in file given its path starting with '/'.")
@@ -85,12 +84,13 @@ def read(filepath:str) -> str:
         print(str(e))
         return "File does not exists or path is incomplete"
 
-@tool("fail", description="Call this tool to the reset last context and generate it again.")
-def fail_tool():
+@tool("fail", description="DO NOT CALL THIS IF NOT ABSOLUTE NECESSARY. CALL THIS TOOL ONLY ONE TIME, END THE RESPONSE AFTER CALLING THIS TOOL.")
+def fail_tool() -> str:
     """Call this tool to the reset last context and generate it again.
     """
     print(f"[TOOL] IA failed.")
     job.ia_failed = True
+    return "Fail tool activated, DO NOT CALL 'fail' TOOL AGAIN and END THE RESPONSE."
 
 @tool("end_work", description="End the work, CALL THIS TOOL ONLY IF ALLOWED BY THE USER. After calling this write a message to end the conversation.")
 def end_work_tool():
