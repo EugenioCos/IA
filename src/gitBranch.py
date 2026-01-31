@@ -25,18 +25,16 @@ class GitBranch:
         try:
             with open(gitignore_path, 'r', encoding="utf-8") as f:
                 file_list = f.readlines()
-                self.ignore_files = [file for file in file_list if file is not None]
+                self.ignore_files = [file.strip() for file in file_list if file is not None] + [".git"]
         except Exception as e:
             print("No .gitignore file found")
-            self.ignore_files = []
+            self.ignore_files = [".git"]
 
     def get_ignore_files(self):
         return self.ignore_files
 
     def commit(self, commit_message: str, files: list[str]) -> bool:
-        for file in files:
-            if file in self.ignore_files: continue
-            self.repo.index.add(file)
+        self.repo.index.add(files)
         if '.' not in self.git_cmd.diff("--cached", "--name-only"):
             return False
         self.repo.index.commit(commit_message)
