@@ -13,7 +13,7 @@ class Prompt:
         self.think: bool = prompt["think"]
         self.commit = prompt.get("commit")
         self.permit_end = prompt.get("permit_end")
-        self.permit_fail = prompt.get("permit_fail")
+        self.can_decide = prompt.get("can_decide")
         self.next_on_fail = prompt.get("next_on_fail")
         self.reset_on_success = prompt.get("reset_on_success")
         self.reset_on_fail = prompt.get("reset_on_fail")
@@ -36,6 +36,6 @@ class Prompt:
         if self.reset_on_success is not None: text = text + f"\n# reset_on_success: {str(self.reset_on_success)}"
         if self.reset_on_fail is not None: text = text + f"\n# reset_on_fail: {str(self.reset_on_fail)}"
         if self.permit_end is not None: text = text + f"\n# permit_end: {str(self.permit_end)}"
-        if self.permit_fail is not None: text = text + f"\n# permit_fail: {str(self.permit_fail)}"
+        if self.can_decide is not None: text = text + f"\n# can_decide: {str(self.can_decide)}"
         text = text + "\n########################################################"
         return text

@@ -84,25 +84,36 @@ def read(filepath:str) -> str:
         print(str(e))
         return "File does not exists or path is incomplete"
 
-@tool("fail", description="DO NOT CALL THIS IF NOT ABSOLUTE NECESSARY. CALL THIS TOOL ONLY ONE TIME, END THE RESPONSE AFTER CALLING THIS TOOL.")
+@tool("reject", description="Cancel some running process by stopping it, USE THIS TOOL TO DECIDE TO STOP.")
 def fail_tool() -> str:
-    """Call this tool to the reset last context and generate it again.
+    """Cancel some running process by stopping it, USE THIS TOOL ONLY IF EXTREMELY NEEDED.
     """
     print(f"[TOOL] IA failed.")
-    job.ia_failed = True
-    return "Fail tool activated, DO NOT CALL 'fail' TOOL AGAIN and END THE RESPONSE."
+    job.add_vote(False)
+    return "Added 1 rejecting vote"
 
-@tool("end_work", description="End the work, CALL THIS TOOL ONLY IF ALLOWED BY THE USER. After calling this write a message to end the conversation.")
+@tool("approve", description="Approve some running process by continuing it, USE THIS TOOL TO DECIDE TO PROCEED.")
+def fail_tool() -> str:
+    """Approve some running process by continuing it, USE THIS TOOL TO DECIDE TO PROCEED.
+    """
+    print(f"[TOOL] IA failed.")
+    job.add_vote(True)
+    return "Added 1 approvation vote"
+
+@tool("end_work", description="End the work, CALL THIS TOOL ONLY IF ALLOWED BY THE USER AND NO MORE THAN ONE TIME. After calling this write a message to end the conversation.")
 def end_work_tool():
-    """End the work, CALL THIS TOOL ONLY IF SPECIFIED BY THE USER.
+    """End the work, CALL THIS TOOL ONLY IF ALLOWED BY THE USER AND NO MORE THAN ONE TIME. After calling this write a message to end the conversation.
     """
     print(f"[TOOL] Work terminated.")
     job.ia_wants_terminate = True
+    return "DO NOT CALL 'end_work' TOOL AGAIN"
 
 write_tools = [write, replace]
 read_tools = [list, read]
+decide_tools = [list, read]
 
 for i in range(0, job.numero_esecuzioni):
-    agents_manager = AgentManager(writer, read_tools, write_tools, end_work_tool, fail_tool)
+    agents_manager = AgentManager(writer, read_tools, write_tools, end_work_tool, decide_tools)
     agents_manager.chat(job, writer, workspace)
-    replaces.clear()
+    job.reset()
+    #replaces.clear()

@@ -22,10 +22,10 @@ class AgentManager:
                  read_tools: list[function], 
                  write_tools: list[function], 
                  end_work_tool: function,
-                 fail_tool: function
+                 decide_tools: function
             ):
         self.end_work_tool = end_work_tool
-        self.fail_tool = fail_tool
+        self.decide_tools = decide_tools
         self.writer = writer
         self.agents = Agents(read_tools, write_tools)
         self.context_manager = ContextManager(self.agents)
@@ -34,19 +34,16 @@ class AgentManager:
         agentWrapper = self.agents.get_agent_wrapper(prompt.agent_name)
         extra_tools = [] 
         if prompt.permit_end: extra_tools.append(self.end_work_tool)
-        if prompt.permit_fail: extra_tools.append(self.fail_tool)
+        if prompt.can_decide: extra_tools = extra_tools + self.decide_tools
         return agentWrapper.get_agent(prompt, self.llm, extra_tools)
     
     def filter_tool_calls(self, tool_calls):
-        filtered = []
-        for tool_call in tool_calls:
-            if tool_call["name"] != 'replace_in_file': continue
-            filtered.append(tool_call)
-        return tool_calls if len(tool_calls) > 0 else None
+        filtered = [tool_call for tool_call in tool_calls if tool_call["name"] == 'replace_in_file']
+        return filtered if len(filtered) > 0 else None
     
     def remove_reasoning(self, text: str) -> str:
-        if "<think>" in text:
-            return text.split("<think>")[0] + text.split("</think>")[1]
+        if "<think>" in text and "</think>" in text:
+           return text.split("<think>")[0] + text.split("</think>")[1]
         else: return text
 
     def filter_response(self, response_messages: list[AnyMessage], think: bool) -> list[str, str]:
@@ -87,9 +84,11 @@ class AgentManager:
                 agent = self.select_agent(prompt)
                 response = agent.invoke({"messages": messages})
                 response_messages: list[AnyMessage] = response["messages"][num_messages_before:]
-                filtered_response_messages = self.filter_response(response_messages)
+                filtered_response_messages = self.filter_response(response_messages, prompt.think)
                 writer.write_messages_in_response(filtered_response_messages, prompt.think)
                 return filtered_response_messages
+            except KeyboardInterrupt as e:
+                exit()
             except Exception as e:
                 print(f"Error communicating with Ollama: {str(e)}")
                 try_count = try_count + 1
@@ -101,36 +100,36 @@ class AgentManager:
         self.context_manager.reset_context(prompt.reset_on_fail)
             
     def chat(self, job: Job, writer: Writer, workspace: Workspace):
-        for i in range(0, job.numero_esecuzioni):
-            while job.get_prompt():
-                # Preparazione contesto e prompt
-                prompt = job.get_prompt()
-                context = self.generate_context(writer, prompt)
-                # Risposta
-                resp_messages = self.generate_response(writer, context, prompt)
-                self.context_manager.add_response_messages(prompt.agent_name, resp_messages)
-                print("Prompt done")
-                # Controllo per fail esplicito
-                if job.ia_failed:
-                    self.prompt_failed(prompt, job)
-                # Controllo per segnale di fine job
-                has_edited = workspace.commit("update")
-                if prompt.permit_end and not has_edited: # controllo fine flusso
-                    if not job.ia_wants_terminate:
-                        self.prompt_failed(prompt, job)
-                    else: break
-                else:
-                    job.ia_wants_terminate = False
-                # Controllo modifiche mancanti o inaspettate
-                if prompt.commit is not None and has_edited != prompt.commit: # controllo modifiche
-                    if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'"
-                    else: message_text = "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
-                    print(f"[SYSTEM] {message_text}")
-                    self.context_manager.add_message(prompt.agent_name, "system", message_text)
+        while job.get_prompt():
+            # Preparazione contesto e prompt
+            prompt = job.get_prompt()
+            context = self.generate_context(writer, prompt)
+            # Risposta
+            resp_messages = self.generate_response(writer, context, prompt)
+            self.context_manager.add_response_messages(prompt.agent_name, resp_messages)
+            print("Prompt done")
+            # Controllo per fail esplicito
+            if prompt.can_decide and not job.get_decision():
+                self.prompt_failed(prompt, job)
+                continue
+            # Controllo per segnale di fine job
+            has_edited = workspace.commit("update")
+            if prompt.permit_end and not has_edited: # controllo fine flusso
+                if not job.ia_wants_terminate:
                     self.prompt_failed(prompt, job)
                     continue
-                # Controllo reset_on_success
-                self.context_manager.reset_context(prompt.reset_on_success)
-                # Tutto come previsto
-                job.next()
+                else:
+                    job.ia_wants_terminate = False
+            # Controllo modifiche mancanti o inaspettate
+            if prompt.commit is not None and has_edited != prompt.commit: # controllo modifiche
+                if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'"
+                else: message_text = "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
+                print(f"[SYSTEM] {message_text}")
+                self.context_manager.add_message(prompt.agent_name, "system", message_text)
+                self.prompt_failed(prompt, job)
+                continue
+            # Controllo reset_on_success
+            self.context_manager.reset_context(prompt.reset_on_success)
+            # Tutto come previsto
+            job.next()
 

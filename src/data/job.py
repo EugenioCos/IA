@@ -6,7 +6,8 @@ from data.prompt import Prompt
 class Job:
 
     ia_wants_terminate = False
-    ia_failed = False
+    ia_approve_count = 0
+    ia_reject_count = 0
     prompts: dict[str, Prompt] = {}
     prompts_order_int_key: dict[str, int] = {}
     prompts_order_title_key: dict[str, int] = {}
@@ -40,3 +41,17 @@ class Job:
     
     def go_back(self, title: str):
         self.current = self.prompts_order_title_key[title]
+
+    def reset(self):
+        self.current = 0
+
+    def add_vote(self, is_approve: bool):
+        if is_approve: self.ia_approve_count = self.ia_approve_count + 1
+        else: self.ia_reject_count = self.ia_reject_count + 1
+    
+
+    def get_decision(self) -> bool:
+        decision = self.ia_reject_count < self.ia_approve_count
+        self.ia_approve_count = 0
+        self.ia_reject_count = 0
+        return decision
