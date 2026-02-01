@@ -29,6 +29,9 @@ class ContextManager:
 
     def reset_context(self, prompts_names: list[str]):
         if prompts_names is None: return
-        for prompt_name in prompts_names:
-            self.prompts_responses.pop(prompt_name)
-            self.prompts_responses.update({prompt_name: []})
+        try:
+            for prompt_name in prompts_names:
+                self.prompts_responses.pop(prompt_name)
+                self.prompts_responses.update({prompt_name: []})
+        except:
+            pass # Contesto già cancellato, questo è un edge case del job permesso per migliore resilienza

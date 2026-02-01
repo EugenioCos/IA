@@ -44,8 +44,13 @@ class AgentManager:
         return filtered if len(filtered) > 0 else None
     
     def remove_reasoning(self, text: str) -> str:
-        if "<think>" in text and "</think>" in text:
-           return text.split("<think>")[0] + text.split("</think>")[1]
+        if "<think>" in text:
+            tmp: str = text.split("<think>", maxsplit=1)[0]
+            if "</think>" in text:
+               tmp = tmp + text.split("</think>", maxsplit=1)[1]
+               return tmp
+            else:
+                return tmp
         else: return text
 
     def filter_response(self, response_messages: list[AnyMessage], think: bool) -> list[str, str]:

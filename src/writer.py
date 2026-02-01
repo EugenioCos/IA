@@ -8,7 +8,7 @@ class Writer:
     def __init__(self, settings: Settings, branch_path:str):
         self.response_dir = os.path.join(branch_path, settings.response_dir)
         self.corrections_path = os.path.join(self.response_dir, "corrections.md")
-        self.context_path = os.path.join(self.response_dir, "contexts")
+        self.context_path = os.path.join(self.response_dir, "contexts/")
         self.fails_path = os.path.join(self.response_dir, "fails.md")
         self.response_path = os.path.join(self.response_dir, "response.md")
         if settings.existing_branch is None:
