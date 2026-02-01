@@ -51,6 +51,7 @@ class Job:
     
 
     def get_decision(self) -> bool:
+        print(f"Approvations_count: {self.ia_approve_count}, rejects_count: {self.ia_reject_count}")
         decision = self.ia_reject_count < self.ia_approve_count
         self.ia_approve_count = 0
         self.ia_reject_count = 0

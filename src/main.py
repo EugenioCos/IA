@@ -28,7 +28,7 @@ def replace(filepath:str, old:str, new:str) -> str:
     """Replace text in a file.
 
     Args:
-        filepath (str): The path of the file from the project root "/".
+        filepath (str):  The path of the file as provided by 'list_files' tool.
         old (str): The existing text in the file to be replaced.
         new (str): The new code corrected.
     """
@@ -57,7 +57,7 @@ def write(filepath:str, text:str):
     """Write text in a file.
 
     Args:
-        filepath (str): The path of the file from the root.
+        filepath (str): The path of the file as provided by 'list_files' tool.
         text (str): The text to write.
     """
     file_path = sanitize_path(filepath)
@@ -73,7 +73,7 @@ def read(filepath:str) -> str:
     """Read text from a file
 
     Args:
-        filepath (str): The path of the file from the root
+        filepath (str): The path of the file as provided by 'list_files' tool.
     """
     file_path = sanitize_path(filepath)
     print(f"[TOOL] READING {filepath}")
@@ -84,19 +84,17 @@ def read(filepath:str) -> str:
         print(str(e))
         return "File does not exists or path is incomplete"
 
-@tool("reject", description="Cancel some running process by stopping it, USE THIS TOOL TO DECIDE TO STOP.")
-def fail_tool() -> str:
+@tool("decide_reject", description="Cancel some running process by stopping it, USE THIS TOOL TO DECIDE TO STOP.")
+def decide_reject_tool() -> str:
     """Cancel some running process by stopping it, USE THIS TOOL ONLY IF EXTREMELY NEEDED.
     """
-    print(f"[TOOL] IA failed.")
     job.add_vote(False)
     return "Added 1 rejecting vote"
 
-@tool("approve", description="Approve some running process by continuing it, USE THIS TOOL TO DECIDE TO PROCEED.")
-def fail_tool() -> str:
+@tool("decide_approve", description="Approve some running process by continuing it, USE THIS TOOL TO DECIDE TO PROCEED.")
+def decide_approve_tool() -> str:
     """Approve some running process by continuing it, USE THIS TOOL TO DECIDE TO PROCEED.
     """
-    print(f"[TOOL] IA failed.")
     job.add_vote(True)
     return "Added 1 approvation vote"
 
@@ -110,7 +108,7 @@ def end_work_tool():
 
 write_tools = [write, replace]
 read_tools = [list, read]
-decide_tools = [list, read]
+decide_tools = [decide_approve_tool, decide_reject_tool]
 
 for i in range(0, job.numero_esecuzioni):
     agents_manager = AgentManager(writer, read_tools, write_tools, end_work_tool, decide_tools)

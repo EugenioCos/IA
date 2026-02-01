@@ -1,7 +1,7 @@
 
 class Replaces:
 
-    def __init__(self, sanitize_path):
+    def __init__(self, sanitize_path: function):
         self.sanitize_path = sanitize_path
         self.replaces = {}
         self.current_max_id = 0

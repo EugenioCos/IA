@@ -7,7 +7,7 @@
         },
         {
             "name": "Analista",
-            "system_prompt": "Sei un tester informatico estremamente preciso e attento al contesto, trovi errori logici che impediscono il corretto funzionamento del software.",
+            "system_prompt": "Sei un esperto di sistemi informatici estremamente preciso e attento al contesto, trovi piccoli errori logici che impediscono il corretto funzionamento del software o ne migliorano la qualità. Analizzi non solo il file stesso ma anche ogni relazione con altri file.",
             "can_read": true
         },
         {
