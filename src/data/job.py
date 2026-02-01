@@ -36,6 +36,9 @@ class Job:
     def get_prompt_index(self, title: str):
         return self.prompts_order_title_key.get(title)
     
+    def get_prompts_list(self):
+        return list(self.prompts.keys())
+    
     def next(self):
         self.current = self.current + 1
     

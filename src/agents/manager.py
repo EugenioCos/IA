@@ -74,7 +74,7 @@ class AgentManager:
         writer.log_prompt_in_response(prompt)
         self.context_manager.add_message(prompt.title, "human", prompt.text)
         context = self.context_manager.get_context(prompt.context_prompts, prompt.title)
-        writer.log_context(context)
+        writer.log_context(prompt.title, context)
         return context
 
     def generate_response(self, writer: Writer, messages: list[AnyMessage], prompt: Prompt) -> list[tuple[str,str]]:
@@ -107,7 +107,7 @@ class AgentManager:
             context = self.generate_context(writer, prompt)
             # Risposta
             resp_messages = self.generate_response(writer, context, prompt)
-            self.context_manager.add_response_messages(prompt.agent_name, resp_messages)
+            self.context_manager.add_response_messages(prompt.title, resp_messages)
             print("Prompt done")
             # Controllo per fail esplicito
             if prompt.can_decide and not self.job.get_decision():
@@ -126,7 +126,7 @@ class AgentManager:
                 if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'"
                 else: message_text = "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
                 print(f"[SYSTEM] {message_text}")
-                self.context_manager.add_message(prompt.agent_name, "system", message_text)
+                self.context_manager.add_message(prompt.title, "system", message_text)
                 self.prompt_failed(prompt)
                 continue
             # Controllo reset_on_success

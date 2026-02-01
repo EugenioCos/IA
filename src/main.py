@@ -111,7 +111,7 @@ read_tools = [list, read]
 decide_tools = [decide_approve_tool, decide_reject_tool]
 
 for i in range(0, job.numero_esecuzioni):
-    agents_manager = AgentManager(writer, read_tools, write_tools, end_work_tool, decide_tools)
-    agents_manager.chat(job, writer, workspace)
+    agents_manager = AgentManager(writer, job, read_tools, write_tools, end_work_tool, decide_tools)
+    agents_manager.chat(writer, workspace)
     job.reset()
     #replaces.clear()

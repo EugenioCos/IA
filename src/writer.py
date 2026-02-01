@@ -5,12 +5,10 @@ from langchain.messages import AnyMessage
 
 class Writer:
 
-    context_index = 0
-
     def __init__(self, settings: Settings, branch_path:str):
         self.response_dir = os.path.join(branch_path, settings.response_dir)
         self.corrections_path = os.path.join(self.response_dir, "corrections.md")
-        self.context_path = os.path.join(self.response_dir, "contexts/context_")
+        self.context_path = os.path.join(self.response_dir, "contexts")
         self.fails_path = os.path.join(self.response_dir, "fails.md")
         self.response_path = os.path.join(self.response_dir, "response.md")
         if settings.existing_branch is None:
@@ -35,9 +33,8 @@ class Writer:
             c.write("\n\n"+text)
             c.flush()
 
-    def log_context(self, messages: list[tuple[str, str]]):
-        path = self.context_path+str(self.context_index)+".md"
-        self.context_index = self.context_index + 1
+    def log_context(self, prompt_title, messages: list[tuple[str, str]]):
+        path = os.path.join(self.context_path, prompt_title + ".md")
         print(f"Contesto salvato in {path}")
         mode = 'w' if os.path.exists(path) else 'x'
         with open(path, mode, encoding='utf-8') as f:
