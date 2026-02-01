@@ -4,7 +4,7 @@ from data.prompt import Prompt
 
 class AgentWrapper:
 
-    ia_replace_instruct = " Per correggere i file usi il tool 'replace_in_file'. Se hai problemi leggi il file che vuoi correggere e assicurati di sostituire codice effettivamente presente."
+    ia_replace_instruct = "Per correggere i file usi il tool 'replace_in_file'. Se hai problemi ecco 2 consigli: 1 - leggi il file che vuoi correggere e assicurati di sostituire codice effettivamente presente. 2 - calcola le sostituzioni efficenti e mirate."
     ia_base_instruction = "USA SEMPRE I TOOL A DISPOSIZIONE; DEVI LEGGERE I FILE E FORNIRE RISPONDE SEMPRE BASATE SUL CONTENUTO REALE DEI FILE; LEGGILI OGNI VOLTA CHE HAI DUBBI; CURIOSITà O TI MANCANO INFORMAZIONI; NON FIDARTI DELLA CONVERSAZIONE MA CONTROLLA I DATI REALI."
     
     def __init__(self, agent_dict: dict, read_tools, write_tools):

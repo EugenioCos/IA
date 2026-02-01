@@ -1,6 +1,11 @@
 
 # Setup
 
+## Setup model:
+
+- Use ollama to host the model
+- Consider to use the Modelfile provided [Modelfile](./Modefile)
+
 ## Create a job:
 
 - job/jobX.json
@@ -30,10 +35,12 @@
 ```
 {
     "job_name": "name of the job file with no .json extension",
-    "model": "model in ollama",
-    "response_path": "file to log the responde, (e.g response.md)",
-    "workspace_path": "ai's workspace directory, absolute path",
-    "ignore_files": ["list files and directories names to ignore"]
+    "use_git": true to use git version control,
+    "existing_branch": null to create new or "the name of the folder in the worspace to work in",
+    "model": "model pulled in ollama",
+    "response_path": "relative path in the target for all ia response log data",
+    "workspace_path": "absolute path for ai's workspace directory",
+    "ignore_files": ["list of files and directories names to ignore"]
 }
 ```
 

@@ -10,10 +10,9 @@ from agents.contextManager import ContextManager
 
 class AgentManager:
     llm = ChatOllama(
-        model="qwen3:8b",
-        temperature=0.1,
-        reasoning=False,
-        num_predict=8192
+        model="qwen_custom:latest",
+        reasoning=False
+        # num_predict=8192
         # other params...
     )
 

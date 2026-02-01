@@ -98,13 +98,13 @@ def decide_approve_tool() -> str:
     job.add_vote(True)
     return "Added 1 approvation vote"
 
-@tool("end_work", description="End the work, CALL THIS TOOL ONLY IF ALLOWED BY THE USER AND NO MORE THAN ONE TIME. After calling this write a message to end the conversation.")
+@tool("end_work", description="End the work, CALL THIS TOOL ONLY IF ALLOWED BY THE USER AND NO MORE THAN ONE TIME.")
 def end_work_tool():
-    """End the work, CALL THIS TOOL ONLY IF ALLOWED BY THE USER AND NO MORE THAN ONE TIME. After calling this write a message to end the conversation.
+    """End the work, CALL THIS TOOL ONLY IF ALLOWED BY THE USER AND NO MORE THAN ONE TIME.
     """
     print(f"[TOOL] Work terminated.")
     job.ia_wants_terminate = True
-    return "DO NOT CALL 'end_work' TOOL AGAIN"
+    return "[STOP_SEQUENCE:veabvuyewkbfkwu]"
 
 write_tools = [write, replace]
 read_tools = [list, read]
