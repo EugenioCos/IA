@@ -23,9 +23,9 @@ def sanitize_path(filename: str) -> str:
 
 replaces = Replaces(sanitize_path)
 
-@tool("replace_in_file", description="Replace existing text in the file, given the path of the file CONTRAINTS: [ USE THE SAME PATH PROVIDED BY LIST_FILES TOOL, AS 'old' MATCH THE SAME EXACT TEXT WITH SAME INDENT AND ALL EXACT CHARACTERS WITHOUT ABBREVIATIONS, DO NOT ABBREVIATE ]")
-def replace(filepath:str, old:str, new:str) -> str:
-    """Replace text in a file.
+@tool
+def replace_in_file(filepath:str, old:str, new:str) -> str:
+    """Replace existing text in the file, given the path of the file CONTRAINTS: [ USE THE SAME PATH PROVIDED BY LIST_FILES TOOL, AS 'old' MATCH THE SAME EXACT TEXT WITH SAME INDENT AND ALL EXACT CHARACTERS WITHOUT ABBREVIATIONS, DO NOT ABBREVIATE ]
 
     Args:
         filepath (str):  The path of the file as provided by 'list_files' tool.
@@ -45,15 +45,15 @@ def replace(filepath:str, old:str, new:str) -> str:
         print(f"[TOOL] Not found: {filepath}")
     return tmp
 
-@tool("list_files", description="List all project files.")
-def list() -> list:
+@tool
+def list_files() -> list[str]:
     """list project files.
     """
     print(f"[TOOL] LISTING FILES")
     return workspace.files
 
-@tool("write_file", description="Write text in file given its path starting with '/'.")
-def write(filepath:str, text:str):
+@tool
+def write_in_file(filepath:str, text:str):
     """Write text in a file.
 
     Args:
@@ -67,9 +67,10 @@ def write(filepath:str, text:str):
             f.write(text)
     except Exception as e:
         print(str(e))
+    return None
 
-@tool("read_file", description="Read file content text.")
-def read(filepath:str) -> str:
+@tool
+def read_file(filepath:str) -> str:
     """Read text from a file
 
     Args:
@@ -77,41 +78,37 @@ def read(filepath:str) -> str:
     """
     file_path = sanitize_path(filepath)
     print(f"[TOOL] READING {filepath}")
+    text = ""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            text = f.read()
     except Exception as e:
         print(str(e))
         return "File does not exists or path is incomplete"
+    return text
 
-@tool("decide_reject", description="Cancel some running process by stopping it, USE THIS TOOL TO DECIDE TO STOP.")
-def decide_reject_tool() -> str:
-    """Cancel some running process by stopping it, USE THIS TOOL ONLY IF EXTREMELY NEEDED.
+@tool("reject", description="USE THIS TOOL TO TELL THE USER THAT YOU REJECT")
+def reject() -> str:
+    """USE THIS TOOL TO TELL THE USER YOUR DECISION TO REJECT.
     """
     job.add_vote(False)
-    return "Added 1 rejecting vote"
+    return "STOP_45F"
 
-@tool("decide_approve", description="Approve some running process by continuing it, USE THIS TOOL TO DECIDE TO PROCEED.")
-def decide_approve_tool() -> str:
-    """Approve some running process by continuing it, USE THIS TOOL TO DECIDE TO PROCEED.
+@tool("approve", description="USE THIS TOOL TO TELL THE USER THAT YOU APPROVE")
+def approve() -> str:
+    """USE THIS TOOL TO TELL THE USER YOUR DECISION TO APPROVE.
     """
     job.add_vote(True)
-    return "Added 1 approvation vote"
+    return "STOP_45F"
 
-@tool("end_work", description="End the work, CALL THIS TOOL ONLY IF ALLOWED BY THE USER AND NO MORE THAN ONE TIME.")
-def end_work_tool():
-    """End the work, CALL THIS TOOL ONLY IF ALLOWED BY THE USER AND NO MORE THAN ONE TIME.
-    """
-    print(f"[TOOL] Work terminated.")
-    job.ia_wants_terminate = True
-    return "[STOP_SEQUENCE:veabvuyewkbfkwu]"
-
-write_tools = [write, replace]
-read_tools = [list, read]
-decide_tools = [decide_approve_tool, decide_reject_tool]
+tools_dict = {
+    "decide_tools": [approve, reject],
+    "write_tools": [replace_in_file, write_in_file],
+    "read_tools": [list_files, read_file]
+}
 
 for i in range(0, job.numero_esecuzioni):
-    agents_manager = AgentManager(writer, job, read_tools, write_tools, end_work_tool, decide_tools)
+    agents_manager = AgentManager(writer, job, tools_dict)
     agents_manager.chat(writer, workspace)
     job.reset()
     #replaces.clear()

@@ -16,27 +16,11 @@ class AgentManager:
         # other params...
     )
 
-    def __init__(self, 
-                 writer: Writer, 
-                 job: Job,
-                 read_tools: list[function], 
-                 write_tools: list[function], 
-                 end_work_tool: function,
-                 decide_tools: list[function]
-            ):
-        self.end_work_tool = end_work_tool
-        self.decide_tools = decide_tools
+    def __init__(self, writer: Writer, job: Job, tools_dict):
         self.writer = writer
         self.job = job
-        self.agents = Agents(read_tools, write_tools)
+        self.agents = Agents(tools_dict, self.llm)
         self.context_manager = ContextManager(self.job)
-
-    def select_agent(self, prompt: Prompt):
-        agentWrapper = self.agents.get_agent_wrapper(prompt.agent_name)
-        extra_tools = [] 
-        if prompt.permit_end: extra_tools.append(self.end_work_tool)
-        if prompt.can_decide: extra_tools = extra_tools + self.decide_tools
-        return agentWrapper.get_agent(prompt, self.llm, extra_tools)
     
     def filter_tool_calls(self, tool_calls):
         filtered = [tool_call for tool_call in tool_calls if tool_call["name"] == 'replace_in_file']
@@ -74,64 +58,66 @@ class AgentManager:
                 raise Exception("message type not found")
         return filtered
     
-    def generate_context(self, writer: Writer, prompt: Prompt) -> list[tuple[str, str]]:
-        writer.log_prompt_in_response(prompt)
+    def generate_context(self, prompt: Prompt) -> list[tuple[str, str]]:
         self.context_manager.add_message(prompt.title, "human", prompt.text)
         context = self.context_manager.get_context(prompt.context_prompts, prompt.title)
-        writer.log_context(prompt.title, context)
         return context
 
-    def generate_response(self, writer: Writer, messages: list[AnyMessage], prompt: Prompt) -> list[tuple[str,str]]:
+    def generate_response(self, writer: Writer, agent, messages: list[AnyMessage], prompt: Prompt) -> list[tuple[str,str]]:
         """Generate text using Ollama's API"""
         try_count = 0 # casi isolati di connessione instabile
         while(True):
             try:
                 num_messages_before = len(messages)
-                agent = self.select_agent(prompt)
                 response = agent.invoke({"messages": messages})
                 response_messages: list[AnyMessage] = response["messages"][num_messages_before:]
                 filtered_response_messages = self.filter_response(response_messages, prompt.think)
-                writer.write_messages_in_response(filtered_response_messages, prompt.think)
+                writer.write_messages_in_response(filtered_response_messages)
                 return filtered_response_messages
             except KeyboardInterrupt as e:
                 exit()
             except Exception as e:
                 print(f"Error communicating with Ollama: {str(e)}")
                 try_count = try_count + 1
-                if try_count == 2: exit()
+                if try_count == 2: raise e
             
-    def prompt_failed(self, prompt: Prompt):
-        self.job.go_back(prompt.next_on_fail)
+    def prompt_failed(self, prompt: Prompt, message: str = None, keep_on_current: bool = False):
+        if message is not None:
+            print(f"[SYSTEM] {message}")
+            self.context_manager.add_message(prompt.title, "system", message)
+        if not keep_on_current: self.job.set_current(prompt.next_on_fail)
         self.context_manager.reset_context(prompt.reset_on_fail)
             
     def chat(self, writer: Writer, workspace: Workspace):
         while self.job.get_prompt():
-            # Preparazione contesto e prompt
+            # Preparazione
             prompt = self.job.get_prompt()
-            context = self.generate_context(writer, prompt)
+            context = self.generate_context(prompt)
+            agentWrapper = self.agents.get_agent_wrapper(prompt.agent_name)
+            writer.log_prompt_in_response(prompt)
+            writer.log_context(prompt.title, context)
+            writer.write_in_response(str(agentWrapper))
             # Risposta
-            resp_messages = self.generate_response(writer, context, prompt)
+            resp_messages = self.generate_response(writer, agentWrapper.get_agent(), context, prompt)
             self.context_manager.add_response_messages(prompt.title, resp_messages)
             print("Prompt done")
-            # Controllo per fail esplicito
-            if prompt.can_decide and not self.job.get_decision():
-                self.prompt_failed(prompt)
-                continue
-            # Controllo per segnale di fine job
+            # Post Risposta
             has_edited = workspace.commit("update")
-            if prompt.permit_end and not has_edited: # controllo fine flusso
-                if not self.job.ia_wants_terminate:
+            # - controllo decisione
+            if prompt.must_decide:
+                if not self.job.has_decided():
+                    self.prompt_failed(prompt, "YOU MUST USE 'approve' OR 'reject' TOOLS TO DECIDE. LEGGI I FILE PER DECIDERE", True)
+                    continue
+                elif not self.job.get_decision():
+                    if prompt.permit_end and not has_edited:
+                        self.job.end()
+                        continue
                     self.prompt_failed(prompt)
                     continue
-                else:
-                    self.job.ia_wants_terminate = False
-            # Controllo modifiche mancanti o inaspettate
-            if prompt.commit is not None and has_edited != prompt.commit: # controllo modifiche
-                if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'"
-                else: message_text = "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
-                print(f"[SYSTEM] {message_text}")
-                self.context_manager.add_message(prompt.title, "system", message_text)
-                self.prompt_failed(prompt)
+            # - controllo modifiche mancanti o inaspettate
+            if prompt.commit is not None and has_edited != prompt.commit:
+                if(prompt.commit): self.prompt_failed(prompt, "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'")
+                else: self.prompt_failed(prompt, "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI")
                 continue
             # Controllo reset_on_success
             self.context_manager.reset_context(prompt.reset_on_success)

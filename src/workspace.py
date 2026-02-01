@@ -31,9 +31,10 @@ class Workspace:
         self.scan_files(project_path, ignore_files)
         for file in self.full_files:
             workspace_file_path = os.path.join(self.path, file)
-            self.workspace_files.append(workspace_file_path)
             os.makedirs(os.path.dirname(workspace_file_path), exist_ok=True)
             shutil.copyfile(os.path.join(project_path, file), workspace_file_path)
+            if os.path.split(file)[1] in ignore_files: continue
+            self.workspace_files.append(workspace_file_path)
         
     def init_existing(self, project_path, ignore_files):
         self.branch_name = self.settings.existing_branch

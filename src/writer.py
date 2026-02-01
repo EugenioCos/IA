@@ -49,7 +49,7 @@ class Writer:
         print(str(prompt))
         self.write_in_response(str(prompt))
 
-    def write_messages_in_response(self, messages: list[tuple[str, str]], think):
+    def write_messages_in_response(self, messages: list[tuple[str, str]]):
         for message in messages:
             self.write_in_response(f"[{message[0]}] {message[1]}")
 
