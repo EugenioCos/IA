@@ -1,38 +1,34 @@
-import os
-from langchain.messages import AnyMessage, AIMessage, HumanMessage, SystemMessage
-
 from data.job import Job
-from agents.agents import Agents
 
 class ContextManager:
     
-    def __init__(self, agents: Agents):
-        self.agents_messages: dict[str, list[tuple[str, str]]] = {}
-        for agent_name in agents.get_names_list():
-            self.agents_messages.update({agent_name: []})
+    def __init__(self, job: Job):
+        self.prompts_responses: dict[str, list[tuple[str, str]]] = {}
+        for prompt_name in job.get_prompts_list():
+            self.prompts_responses.update({prompt_name: []})
     
     def get_all(self) -> list[tuple[str, str]]:
         context: list[tuple[str, str]] = []
-        for agent_messages in list(self.agents_messages.values()):
+        for agent_messages in list(self.prompts_responses.values()):
             context.extend(agent_messages)
         return context
 
-    def get_context(self, agents: list[str], agent_name: str) -> list[tuple[str, str]]:
+    def get_context(self, prompts: list[str], prompt_name: str) -> list[tuple[str, str]]:
         context: list[tuple[str, str]] = []
-        if agents is None:
+        if prompts is None:
             return self.get_all()
-        for agent_name in agents + [agent_name]:
-            context.extend(self.agents_messages[agent_name])
+        for prompt_name in prompts + [prompt_name]:
+            context.extend(self.prompts_responses[prompt_name])
         return context
 
-    def add_response_messages(self, agent_name: str, response_messages: list[tuple[str, str]]):
-        self.agents_messages[agent_name].extend(response_messages)
+    def add_response_messages(self, prompt_name: str, response_messages: list[tuple[str, str]]):
+        self.prompts_responses[prompt_name].extend(response_messages)
 
-    def add_message(self, agent_name: str, role: str, text: str):
-        self.agents_messages[agent_name].append((role, text))
+    def add_message(self, prompt_name: str, role: str, text: str):
+        self.prompts_responses[prompt_name].append((role, text))
 
-    def reset_context(self, agents_names: list[str]):
-        if agents_names is None: return
-        for agent_name in agents_names:
-            self.agents_messages.pop(agent_name)
-            self.agents_messages.update({agent_name: []})
+    def reset_context(self, prompts_names: list[str]):
+        if prompts_names is None: return
+        for prompt_name in prompts_names:
+            self.prompts_responses.pop(prompt_name)
+            self.prompts_responses.update({prompt_name: []})

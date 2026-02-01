@@ -19,16 +19,18 @@ class AgentManager:
 
     def __init__(self, 
                  writer: Writer, 
+                 job: Job,
                  read_tools: list[function], 
                  write_tools: list[function], 
                  end_work_tool: function,
-                 decide_tools: function
+                 decide_tools: list[function]
             ):
         self.end_work_tool = end_work_tool
         self.decide_tools = decide_tools
         self.writer = writer
+        self.job = job
         self.agents = Agents(read_tools, write_tools)
-        self.context_manager = ContextManager(self.agents)
+        self.context_manager = ContextManager(self.job)
 
     def select_agent(self, prompt: Prompt):
         agentWrapper = self.agents.get_agent_wrapper(prompt.agent_name)
@@ -70,8 +72,8 @@ class AgentManager:
     
     def generate_context(self, writer: Writer, prompt: Prompt) -> list[tuple[str, str]]:
         writer.log_prompt_in_response(prompt)
-        self.context_manager.add_message(prompt.agent_name, "human", prompt.text)
-        context = self.context_manager.get_context(prompt.context, prompt.agent_name)
+        self.context_manager.add_message(prompt.title, "human", prompt.text)
+        context = self.context_manager.get_context(prompt.context_prompts, prompt.title)
         writer.log_context(context)
         return context
 
@@ -93,43 +95,42 @@ class AgentManager:
                 print(f"Error communicating with Ollama: {str(e)}")
                 try_count = try_count + 1
                 if try_count == 2: exit()
-                raise Exception("E")
             
-    def prompt_failed(self, prompt: Prompt, job: Job):
-        job.go_back(prompt.next_on_fail)
+    def prompt_failed(self, prompt: Prompt):
+        self.job.go_back(prompt.next_on_fail)
         self.context_manager.reset_context(prompt.reset_on_fail)
             
-    def chat(self, job: Job, writer: Writer, workspace: Workspace):
-        while job.get_prompt():
+    def chat(self, writer: Writer, workspace: Workspace):
+        while self.job.get_prompt():
             # Preparazione contesto e prompt
-            prompt = job.get_prompt()
+            prompt = self.job.get_prompt()
             context = self.generate_context(writer, prompt)
             # Risposta
             resp_messages = self.generate_response(writer, context, prompt)
             self.context_manager.add_response_messages(prompt.agent_name, resp_messages)
             print("Prompt done")
             # Controllo per fail esplicito
-            if prompt.can_decide and not job.get_decision():
-                self.prompt_failed(prompt, job)
+            if prompt.can_decide and not self.job.get_decision():
+                self.prompt_failed(prompt)
                 continue
             # Controllo per segnale di fine job
             has_edited = workspace.commit("update")
             if prompt.permit_end and not has_edited: # controllo fine flusso
-                if not job.ia_wants_terminate:
-                    self.prompt_failed(prompt, job)
+                if not self.job.ia_wants_terminate:
+                    self.prompt_failed(prompt)
                     continue
                 else:
-                    job.ia_wants_terminate = False
+                    self.job.ia_wants_terminate = False
             # Controllo modifiche mancanti o inaspettate
             if prompt.commit is not None and has_edited != prompt.commit: # controllo modifiche
                 if(prompt.commit): message_text = "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'"
                 else: message_text = "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI"
                 print(f"[SYSTEM] {message_text}")
                 self.context_manager.add_message(prompt.agent_name, "system", message_text)
-                self.prompt_failed(prompt, job)
+                self.prompt_failed(prompt)
                 continue
             # Controllo reset_on_success
             self.context_manager.reset_context(prompt.reset_on_success)
             # Tutto come previsto
-            job.next()
+            self.job.next()
 

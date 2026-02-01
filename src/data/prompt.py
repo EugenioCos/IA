@@ -17,7 +17,7 @@ class Prompt:
         self.next_on_fail = prompt.get("next_on_fail")
         self.reset_on_success = prompt.get("reset_on_success")
         self.reset_on_fail = prompt.get("reset_on_fail")
-        self.context = prompt.get("context")
+        self.context_prompts = prompt.get("context_prompts")
         self.tools = prompt.get("tools")
         if self.tools: self.text = self.tools_usage_message + self.text
         if self.permit_end: self.text = self.text + self.permit_end_message
@@ -29,7 +29,7 @@ class Prompt:
         \n# agent_name: {self.agent_name} \
         \n# prompt: {self.prompt} \
         \n# think: {str(self.think)}"
-        if self.context is not None: text = text + f"\n# context: {str(self.context)}"
+        if self.context_prompts is not None: text = text + f"\n# context_prompts: {str(self.context_prompts)}"
         if self.tools is not None: text = text + f"\n# tools: {str(self.tools)}"
         if self.commit is not None: text = text + f"\n# commit: {str(self.commit)} "
         if self.next_on_fail is not None: text = text + f"\n# next_on_fail: {self.next_on_fail}"
