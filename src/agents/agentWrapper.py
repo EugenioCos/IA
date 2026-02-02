@@ -21,7 +21,7 @@ class AgentWrapper:
         if self.can_write == True: self.tools.extend(tools_dict["write_tools"])
         # Init system prompt
         if self.can_read:
-            self.prompt = self.prompt + self.ia_read_instruct
+            self.system_prompt = self.system_prompt + self.ia_read_instruct
         if self.can_decide:
             self.system_prompt = self.system_prompt + self.ia_decide_instruct
         if self.can_write: 
