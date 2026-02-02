@@ -6,13 +6,8 @@ class Agents:
 
     agents: dict[str, AgentWrapper] = {}
 
-    def __init__(self, tools_dict, llm):
-        try:
-            data = json.load(open(f"agents_settings.json", "r"))
-        except Exception as e:
-            raise Exception(f"Invalid agents_settings, Exception: {str(e)}")
-        
-        for agent_dict in data["agents"]:
+    def __init__(self, agents_dict, tools_dict, llm):
+        for agent_dict in agents_dict["agents"]:
             agent = AgentWrapper(agent_dict, tools_dict, llm)
             self.agents.update({agent.name: agent})
 

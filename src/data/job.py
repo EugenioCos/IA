@@ -1,6 +1,5 @@
 import json
 
-from data.settings import Settings
 from data.prompt import Prompt
 
 class Job:
@@ -12,15 +11,9 @@ class Job:
     prompts_order_title_key: dict[str, int] = {}
     current = 0
 
-    def __init__(self, settings: Settings):
-        try:
-            data = json.load(open(f"jobs/{settings.job_name}.json", "r"))
-        except Exception as e:
-            raise Exception(f"Invalid job, Exception: {str(e)}")
-        
-        self.source = data["source"]
-        self.numero_esecuzioni = data["executions_count"]
-        for i, prompt_dict in enumerate(data["prompts"]):
+    def __init__(self, job_dic):
+        self.numero_esecuzioni = job_dic["executions_count"]
+        for i, prompt_dict in enumerate(job_dic["prompts"]):
             prompt =  Prompt(prompt_dict)
             self.prompts.update({prompt.title: prompt})
             self.prompts_order_title_key.update({prompt.title: i})

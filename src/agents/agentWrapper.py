@@ -6,7 +6,7 @@ class AgentWrapper:
 
     ia_tool_instruction = "USA SEMPRE I TOOL A DISPOSIZIONE; DEVI LEGGERE I FILE E FORNIRE RISPONDE SEMPRE BASATE SUL CONTENUTO REALE DEI FILE; LEGGILI OGNI VOLTA CHE HAI DUBBI; CURIOSITà O TI MANCANO INFORMAZIONI; NON CHIEDERE NULLA MA OTTIENILO UTILIZZANDO I TOOL."
     ia_decide_instruct = "YOU MUST USE 'approve' OR 'reject' TOOLS. USE TOOLS IF YOU NEED MORE INFORMATIONS"
-    ia_read_instruct = "PER LEGGERE I FILE USA IL TOOL 'read_file'. "
+    ia_read_instruct = "PER LEGGERE I FILE USA IL TOOL 'read_file'. IGNORE FILE NOT LISTED BY 'list_files' TOOL"
     ia_replace_instruct = "PER CORREGGERE USE IL TOOL 'replace_in_file' (se hai problemi ecco 2 consigli: 1 - leggi il file che vuoi correggere e assicurati di sostituire codice effettivamente presente. 2 - calcola le sostituzioni efficenti e mirate). "
     prompt = ""
     tools = []

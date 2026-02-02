@@ -1,8 +1,7 @@
 from langchain_ollama import ChatOllama
 from langchain.messages import HumanMessage, AIMessage,  ToolMessage, SystemMessage, AnyMessage
 
-from writer import Writer
-from workspace import Workspace
+from reporter import Reporter
 from data.job import Job
 from data.prompt import Prompt
 from agents.agents import Agents
@@ -16,10 +15,10 @@ class AgentManager:
         # other params...
     )
 
-    def __init__(self, writer: Writer, job: Job, tools_dict):
-        self.writer = writer
+    def __init__(self, reporter: Reporter, job: Job, agents_dict, tools_dict):
+        self.reporter = reporter
         self.job = job
-        self.agents = Agents(tools_dict, self.llm)
+        self.agents = Agents(agents_dict, tools_dict, self.llm)
         self.context_manager = ContextManager(self.job)
     
     def filter_tool_calls(self, tool_calls):
@@ -63,7 +62,7 @@ class AgentManager:
         context = self.context_manager.get_context(prompt.context_prompts, prompt.title)
         return context
 
-    def generate_response(self, writer: Writer, agent, messages: list[AnyMessage], prompt: Prompt) -> list[tuple[str,str]]:
+    def generate_response(self, agent, messages: list[AnyMessage], prompt: Prompt) -> list[tuple[str,str]]:
         """Generate text using Ollama's API"""
         try_count = 0 # casi isolati di connessione instabile
         while(True):
@@ -72,7 +71,7 @@ class AgentManager:
                 response = agent.invoke({"messages": messages})
                 response_messages: list[AnyMessage] = response["messages"][num_messages_before:]
                 filtered_response_messages = self.filter_response(response_messages, prompt.think)
-                writer.write_messages_in_response(filtered_response_messages)
+                self.reporter.write_in_response(filtered_response_messages)
                 return filtered_response_messages
             except KeyboardInterrupt as e:
                 exit()
@@ -88,21 +87,21 @@ class AgentManager:
         if not keep_on_current: self.job.set_current(prompt.next_on_fail)
         self.context_manager.reset_context(prompt.reset_on_fail)
             
-    def chat(self, writer: Writer, workspace: Workspace):
+    def chat(self):
         while self.job.get_prompt():
             # Preparazione
             prompt = self.job.get_prompt()
             context = self.generate_context(prompt)
             agentWrapper = self.agents.get_agent_wrapper(prompt.agent_name)
-            writer.log_prompt_in_response(prompt)
-            writer.log_context(prompt.title, context)
-            writer.write_in_response(str(agentWrapper))
+            self.reporter.log_prompt_in_response(prompt)
+            self.reporter.log_context(prompt.title, context)
+            self.reporter.write_in_response(str(agentWrapper)) # log agent
             # Risposta
-            resp_messages = self.generate_response(writer, agentWrapper.get_agent(), context, prompt)
+            resp_messages = self.generate_response(agentWrapper.get_agent(), context, prompt)
             self.context_manager.add_response_messages(prompt.title, resp_messages)
             print("Prompt done")
             # Post Risposta
-            has_edited = workspace.commit("update")
+            has_edited = self.reporter.commit("update")
             # - controllo decisione
             if prompt.must_decide:
                 if not self.job.has_decided():
