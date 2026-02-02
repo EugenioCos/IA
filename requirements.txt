@@ -1,5 +1,6 @@
 langchain
-langchain_ollama
+#langchain_ollama
+langchain_openai
 langchain_core
 GitPython
 pydantic

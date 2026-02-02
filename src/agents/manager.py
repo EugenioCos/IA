@@ -1,4 +1,6 @@
+import os
 from langchain_ollama import ChatOllama
+#from langchain_openai import ChatOpenAI
 from langchain.messages import HumanMessage, AIMessage,  ToolMessage, SystemMessage, AnyMessage
 
 from reporter import Reporter
@@ -7,13 +9,23 @@ from data.prompt import Prompt
 from agents.agents import Agents
 from agents.contextManager import ContextManager
 
+#os.environ["OPENAI_API_KEY"] = "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"
+
 class AgentManager:
     llm = ChatOllama(
-        model="qwen_custom:latest",
-        reasoning=False
+        #model="kimi-k2.5:cloud",
+        model="gpt-oss:120b-cloud",
+        reasoning=False,
+        temperature=0.1
+        # num_ctx=4096,
+        # num_predict=2048,
+        # stop = ["STOP_45F"]
         # num_predict=8192
         # other params...
     )
+    # llm = ChatOpenAI(
+    #     model="gpt-5-mini"
+    # )
 
     def __init__(self, reporter: Reporter, job: Job, agents_dict, tools_dict):
         self.reporter = reporter
@@ -68,7 +80,9 @@ class AgentManager:
         while(True):
             try:
                 num_messages_before = len(messages)
+                print("G - GENERATING... ")
                 response = agent.invoke({"messages": messages})
+                print("G + GENERATED ")
                 response_messages: list[AnyMessage] = response["messages"][num_messages_before:]
                 filtered_response_messages = self.filter_response(response_messages, prompt.think)
                 self.reporter.write_in_response(filtered_response_messages)
@@ -107,12 +121,15 @@ class AgentManager:
                 if not self.job.has_decided():
                     self.prompt_failed(prompt, "YOU MUST USE 'approve' OR 'reject' TOOLS TO DECIDE. LEGGI I FILE PER DECIDERE", True)
                     continue
-                elif not self.job.get_decision():
-                    if prompt.permit_end and not has_edited:
+                elif not self.job.get_decision(): # Decisione false
+                    if prompt.permit_end and not has_edited: # Decisione false con permit_end attivo = richiesta terminazione
                         self.job.end()
                         continue
-                    self.prompt_failed(prompt)
+                    self.prompt_failed(prompt) # Decisione false porta a next_on_surrent
                     continue
+                elif prompt.permit_end: # Decisione true con permit_end attivo segue next_on_fail
+                    self.prompt_failed(prompt, keep_on_current=True)
+
             # - controllo modifiche mancanti o inaspettate
             if prompt.commit is not None and has_edited != prompt.commit:
                 if(prompt.commit): self.prompt_failed(prompt, "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'")

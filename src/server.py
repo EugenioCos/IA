@@ -28,13 +28,18 @@ class Server:
         while line is None:
             print(line)
             line = self.reader.readline()
-        return json.loads(line)
+        try: data = json.loads(line)
+        except: 
+            print("EXCEPTION: INVALID DATA FROM CLIENT")
+            raise Exception("Invalid response from client")
+        return data
 
     def send_function(self, message) -> any:
         print(f"Sending {str(message["command"])}")
         to_send = json.dumps(message).encode(encoding="utf-8")+b'\n'
         self.conn.sendall(bytearray(to_send))
         data_json = self.read_dict()
+        print(f"Response received")
         return data_json["response"]
 
     def accept_work(self) -> list:
