@@ -138,5 +138,8 @@ class AgentManager:
             # Controllo reset_on_success
             self.context_manager.reset_context(prompt.reset_on_success)
             # Tutto come previsto
-            self.job.next()
+            if prompt.next_on_success is not None: 
+                self.job.set_current(prompt.next_on_success)
+            else:
+                self.job.next()
 

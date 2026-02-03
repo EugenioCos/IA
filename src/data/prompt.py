@@ -16,6 +16,7 @@ class Prompt:
         self.must_decide = prompt.get("must_decide")
         self.permit_end = prompt.get("permit_end")
         self.next_on_fail = prompt.get("next_on_fail")
+        self.next_on_success = prompt.get("next_on_success")
         self.reset_on_success = prompt.get("reset_on_success")
         self.reset_on_fail = prompt.get("reset_on_fail")
         self.context_prompts = prompt.get("context_prompts")
@@ -35,6 +36,7 @@ class Prompt:
         if self.tools is not None: text = text + f"\n# tools: {str(self.tools)}"
         if self.commit is not None: text = text + f"\n# commit: {str(self.commit)} "
         if self.next_on_fail is not None: text = text + f"\n# next_on_fail: {self.next_on_fail}"
+        if self.next_on_success is not None: text = text + f"\n# next_on_fail: {self.next_on_success}"
         if self.reset_on_success is not None: text = text + f"\n# reset_on_success: {str(self.reset_on_success)}"
         if self.reset_on_fail is not None: text = text + f"\n# reset_on_fail: {str(self.reset_on_fail)}"
         if self.permit_end is not None: text = text + f"\n# permit_end: {str(self.permit_end)}"
