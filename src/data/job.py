@@ -1,42 +1,55 @@
 import json
 
-from data.settings import Settings
 from data.prompt import Prompt
 
 class Job:
 
-    ia_wants_terminate = False
-    prompts: list[Prompt] = []
+    ia_approve_count = 0
+    ia_reject_count = 0
+    prompts: dict[str, Prompt] = {}
+    prompts_order_int_key: dict[str, int] = {}
+    prompts_order_title_key: dict[str, int] = {}
     current = 0
 
-    def __init__(self, settings: Settings):
-        try:
-            data = json.load(open(f"jobs/{settings.job_name}.json", "r"))
-        except Exception as e:
-            raise Exception(f"Invalid job, Exception: {str(e)}")
-        
-        self.root = data["root"]
-        for prompt in data["prompts"]:
-            text = prompt["text"]
-            think = prompt["think"]
-            commit = prompt["commit"]
-            permit_end = prompt["permit_end"]
-            post_flow = prompt["post_flow"]
-            context = prompt["context"]
-            tools = prompt["tools"]
-            self.prompts.append(Prompt(text, think, commit, permit_end, post_flow, context, tools))
+    def __init__(self, job_dic):
+        self.numero_esecuzioni = job_dic["executions_count"]
+        for i, prompt_dict in enumerate(job_dic["prompts"]):
+            prompt =  Prompt(prompt_dict)
+            self.prompts.update({prompt.title: prompt})
+            self.prompts_order_title_key.update({prompt.title: i})
+            self.prompts_order_int_key.update({i: prompt.title})
 
     def get_prompt(self):
-        if(self.current == len(self.prompts)):
+        if(self.current >= len(self.prompts)):
             return None
-        return self.prompts[self.current]
+        prompt_index = self.prompts_order_int_key[self.current]
+        return self.prompts.get(prompt_index)
+    
+    def get_prompts_list(self):
+        return list(self.prompts.keys())
     
     def next(self):
         self.current = self.current + 1
     
-    def go_back(self, diff):
-        save = self.current
-        while self.current - save != diff:
-            self.current = self.current - 1
-        
+    def set_current(self, title: str):
+        self.current = self.prompts_order_title_key[title]
 
+    def reset(self):
+        self.current = 0
+
+    def end(self):
+        self.current = 100000
+
+    def add_vote(self, is_approve: bool):
+        if is_approve: self.ia_approve_count = self.ia_approve_count + 1
+        else: self.ia_reject_count = self.ia_reject_count + 1
+
+    def has_decided(self) -> bool:
+        return (self.ia_approve_count + self.ia_reject_count) > 0
+
+    def get_decision(self) -> bool:
+        print(f"Approvations_count: {self.ia_approve_count}, rejects_count: {self.ia_reject_count}")
+        decision = self.ia_reject_count < self.ia_approve_count
+        self.ia_approve_count = 0
+        self.ia_reject_count = 0
+        return decision
