@@ -4,7 +4,7 @@ from langchain.messages import AnyMessage
 
 class Reporter:
 
-    def __init__(self, send_function: function):
+    def __init__(self, send_function):
         self.send_function = send_function
 
     # Tools

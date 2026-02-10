@@ -9,27 +9,23 @@ from data.prompt import Prompt
 from agents.agents import Agents
 from agents.contextManager import ContextManager
 
-#os.environ["OPENAI_API_KEY"] = "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"
-
 class AgentManager:
-    llm = ChatOllama(
-        #model="kimi-k2.5:cloud",
-        model="gpt-oss:120b-cloud",
-        reasoning=False,
-        temperature=0.1
-        # num_ctx=4096,
-        # num_predict=2048,
-        # stop = ["STOP_45F"]
-        # num_predict=8192
-        # other params...
-    )
-    # llm = ChatOpenAI(
-    #     model="gpt-5-mini"
-    # )
 
-    def __init__(self, reporter: Reporter, job: Job, agents_dict, tools_dict):
+    def __init__(self, model, reporter: Reporter, job: Job, agents_dict, tools_dict):
         self.reporter = reporter
         self.job = job
+        self.llm = ChatOllama(
+            #model="kimi-k2.5:cloud",
+            #model="gpt-oss:120b-cloud",
+            model=model,
+            reasoning=False,
+            temperature=0.,
+            num_ctx=4096,
+            num_predict=4096,
+            stop = ["STOP-GENERATION"]
+            # num_predict=8192
+            # other params...
+        )
         self.agents = Agents(agents_dict, tools_dict, self.llm)
         self.context_manager = ContextManager(self.job)
     
@@ -76,23 +72,17 @@ class AgentManager:
 
     def generate_response(self, agent, messages: list[AnyMessage], prompt: Prompt) -> list[tuple[str,str]]:
         """Generate text using Ollama's API"""
-        try_count = 0 # casi isolati di connessione instabile
-        while(True):
-            try:
-                num_messages_before = len(messages)
-                print("G - GENERATING... ")
-                response = agent.invoke({"messages": messages})
-                print("G + GENERATED ")
-                response_messages: list[AnyMessage] = response["messages"][num_messages_before:]
-                filtered_response_messages = self.filter_response(response_messages, prompt.think)
-                self.reporter.write_in_response(filtered_response_messages)
-                return filtered_response_messages
-            except KeyboardInterrupt as e:
-                exit()
-            except Exception as e:
-                print(f"Error communicating with Ollama: {str(e)}")
-                try_count = try_count + 1
-                if try_count == 2: raise e
+        num_messages_before = len(messages)
+        print("STARTED GENERATE... ")
+        try:
+            response = agent.invoke({"messages": messages})
+        except KeyboardInterrupt as e:
+            exit()
+        print("ENDED GENERATE ")
+        response_messages: list[AnyMessage] = response["messages"][num_messages_before:]
+        filtered_response_messages = self.filter_response(response_messages, prompt.think)
+        self.reporter.write_in_response(filtered_response_messages)
+        return filtered_response_messages
             
     def prompt_failed(self, prompt: Prompt, message: str = None, keep_on_current: bool = False):
         if message is not None:
