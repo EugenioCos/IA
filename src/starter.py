@@ -1,3 +1,4 @@
+import json
 from langchain.tools import tool
 
 from agents.contextManager import ContextManager
@@ -27,16 +28,14 @@ def setup():
             new (str): The new code corrected.
         """
         result = reporter.replace_in_file(file_path, old, new)
-        if "Failed" in result:
-            return f"Failed replace in {file_path} be sure 'old' match some text in the actual file content SPLIT IN SHORTER REPLACES; PRESERVE SAME EXACT WHITESPACES AS THEY ARE. READ THE ORIGINAL FILE AND MATCH THE SAME EXACT CHARACTERS ORDER."
-        elif "applied" in result:
-            replaces.add_replace(file_path, old, new)
+        if "NOT REPLACED" in result:
+            return f"Failed replace in {file_path} be sure 'old' match some text in the actual file content SPLIT IN SHORTER REPLACES; PRESERVE SAME EXACT WHITESPACES AND SPECIAL CHARACTERS AS THEY ARE. READ THE ORIGINAL FILE AND MATCH THE SAME EXACT CHARACTERS ORDER."
         return result
 
     @tool
     def list_files() -> list[str]:
         """list project files."""
-        print(f"[TOOL] LISTING FILES")
+        print("[TOOL] LISTING FILES")
         return reporter.list_files()
 
     @tool
@@ -83,7 +82,11 @@ def setup():
             agents_manager.chat()
         except BrokenPipeError as e:
             server.close()
-            print("Client disconnected")
+            print(f"Client disconnected {e}")
+            break
+        except json.decoder.JSONDecodeError as e:
+            server.close()
+            print(f"Client disconnected {e}")
             break
         job.reset()
         # replaces.clear()
@@ -91,4 +94,11 @@ def setup():
 
 while True:
     print("Starting work...")
-    setup()
+    try:
+        setup()
+    except OSError as e:
+        server.close()
+        print(f"Client disconnected {e}")
+        break
+    except KeyboardInterrupt as e:
+        exit()
