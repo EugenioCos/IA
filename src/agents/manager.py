@@ -18,10 +18,11 @@ class AgentManager:
             #model="kimi-k2.5:cloud",
             #model="gpt-oss:120b-cloud",
             model=model,
-            reasoning=False,
+            reasoning=True,
             temperature=0.,
-            num_ctx=4096,
-            num_predict=4096,
+            repeat_penalty=1.5,
+            #num_ctx=4096,
+            num_predict=2048,
             stop = ["STOP-GENERATION"]
             # num_predict=8192
             # other params...
@@ -34,22 +35,16 @@ class AgentManager:
         return filtered if len(filtered) > 0 else None
     
     def remove_reasoning(self, text: str) -> str:
-        if "<think>" in text:
-            tmp: str = text.split("<think>", maxsplit=1)[0]
-            if "</think>" in text:
-               tmp = tmp + text.split("</think>", maxsplit=1)[1]
-               return tmp
-            else:
-                return tmp
+        if "</think>" in text:
+            return text.split("</think>", maxsplit=1)[1]
         else: return text
 
     def filter_response(self, response_messages: list[AnyMessage], think: bool) -> list[str, str]:
         filtered: list[str, str] = []
         for message in response_messages:
             if isinstance(message, AIMessage):
-                if message.tool_calls:
-                    message.tool_calls = self.filter_tool_calls(message.tool_calls)
-                    if message.tool_calls is None: continue
+                if message.content is None or message.content in ["", " "]: continue
+                filtered.append(("assistant", message.content))
                 if think:
                     filtered.append(("assistant", message.pretty_repr()))
                 else: 
@@ -74,10 +69,7 @@ class AgentManager:
         """Generate text using Ollama's API"""
         num_messages_before = len(messages)
         print("STARTED GENERATE... ")
-        try:
-            response = agent.invoke({"messages": messages})
-        except KeyboardInterrupt as e:
-            exit()
+        response = agent.invoke({"messages": messages})
         print("ENDED GENERATE ")
         response_messages: list[AnyMessage] = response["messages"][num_messages_before:]
         filtered_response_messages = self.filter_response(response_messages, prompt.think)
