@@ -29,6 +29,10 @@ class Reporter:
         message = { "command": "commit", "title": title }
         return self.send_function(message)
     
+    def revert_commit(self) -> str:
+        message = { "command": "revert_commit"}
+        return self.send_function(message)
+    
     # Logs
 
     def write_in_response(self, content: str | list[tuple[str, str]]):
