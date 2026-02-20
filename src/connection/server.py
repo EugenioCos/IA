@@ -1,4 +1,5 @@
 import socket, json
+import time
 
 from connection.http import Http
 
@@ -18,12 +19,15 @@ class Server:
         self.socket.listen(1)
         self.conn = None
         self.reader = None
+        self.waiting = False
 
     def close(self):
         self.socket.close()
         self.conn.close()
 
     def send_function(self, message: dict) -> any:
+        while self.waiting: time.sleep(1/1000)
+        self.waiting = True
         print(f"Sending {str(message["command"])}")
         to_send = self.http.compose_response(json.dumps(message))
         self.conn.sendall(bytearray(to_send))
@@ -31,6 +35,7 @@ class Server:
         response = self.http.read_body(self.reader)
         data_json = json.loads(response)
         print(f"Message received")
+        self.waiting = False
         return data_json["response"]
 
     def accept_work(self) -> list:
