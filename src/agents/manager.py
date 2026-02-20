@@ -1,4 +1,4 @@
-import os
+import json
 from langchain_ollama import ChatOllama
 #from langchain_openai import ChatOpenAI
 from langchain.messages import HumanMessage, AIMessage,  ToolMessage, SystemMessage, AnyMessage
@@ -22,7 +22,7 @@ class AgentManager:
             temperature=0.,
             repeat_penalty=1.5,
             #num_ctx=4096,
-            num_predict=2048,
+            #num_predict=2048,
             stop = ["STOP-GENERATION"]
             # num_predict=8192
             # other params...
@@ -44,7 +44,6 @@ class AgentManager:
         for message in response_messages:
             if isinstance(message, AIMessage):
                 if message.content is None or message.content in ["", " "]: continue
-                filtered.append(("assistant", message.content))
                 if think:
                     filtered.append(("assistant", message.pretty_repr()))
                 else: 
@@ -97,29 +96,32 @@ class AgentManager:
             self.context_manager.add_response_messages(prompt.title, resp_messages)
             print("Prompt done")
             # Post Risposta
-            has_edited = self.reporter.commit("update")
             # - controllo decisione
             if prompt.must_decide:
                 if not self.job.has_decided():
                     self.prompt_failed(prompt, "YOU MUST USE 'approve' OR 'reject' TOOLS TO DECIDE. LEGGI I FILE PER DECIDERE", True)
                     continue
                 elif not self.job.get_decision(): # Decisione false
-                    if prompt.permit_end and not has_edited: # Decisione false con permit_end attivo = richiesta terminazione
+                    if prompt.decision_type == "end": # Decisione false con permit_end attivo = richiesta terminazione
                         self.job.end()
                         continue
-                    self.prompt_failed(prompt) # Decisione false porta a next_on_surrent
-                    continue
-                elif prompt.permit_end: # Decisione true con permit_end attivo segue next_on_fail
+                    elif prompt.decision_type == "undo_change":
+                        self.reporter.revert_commit()
+                    else:
+                        self.prompt_failed(prompt) # Decisione false porta a next_on_fail
+                        continue
+                elif prompt.decision_type == "end": # Decisione true con permit_end attivo segue next_on_fail
                     self.prompt_failed(prompt, keep_on_current=True)
-
             # - controllo modifiche mancanti o inaspettate
-            if prompt.commit is not None and has_edited != prompt.commit:
-                if(prompt.commit): self.prompt_failed(prompt, "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'")
-                else: self.prompt_failed(prompt, "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI")
-                continue
-            # Controllo reset_on_success
+            elif prompt.commit is not None:
+                has_edited = self.reporter.commit("update")
+                if has_edited != prompt.commit:
+                    if(prompt.commit): self.prompt_failed(prompt, "NON HAI MODIFICATO I FILE, RIPROVA UTILIZZANDO I TOOL CHE HAI A DISPOSIZIONE. PROVA A LEGGERE I FILE ORIGINAL E SOTITUIRE PORZIONI DI CODICE PIù BREVI SE NON RIESCI A USARE IL TOOL 'replace_in_file'")
+                    else: self.prompt_failed(prompt, "HAI MODIFICATO FILE, QUINDI SERVONO ULTERIORI CONTROLLI")
+                    continue
+            # reset_on_success
             self.context_manager.reset_context(prompt.reset_on_success)
-            # Tutto come previsto
+            # prossimo prompt
             if prompt.next_on_success is not None: 
                 self.job.set_current(prompt.next_on_success)
             else:
