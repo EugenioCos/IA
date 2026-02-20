@@ -1,10 +1,8 @@
 import json
 from langchain.tools import tool
 
-from agents.contextManager import ContextManager
 from agents.manager import AgentManager
 from data.job import Job
-from data.replaces import Replaces
 from reporter import Reporter
 
 from connection.server import Server
@@ -16,7 +14,6 @@ def setup():
     job = Job(job_dict)
     reporter = Reporter(server.send_function)
     reporter.commit("existing changes")
-    replaces = Replaces()
 
     @tool
     def replace_in_file(file_path:str, old:str, new:str) -> str:
@@ -89,7 +86,6 @@ def setup():
             print(f"Client disconnected {e}")
             break
         job.reset()
-        # replaces.clear()
         i += 1
 
 while True:
