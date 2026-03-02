@@ -45,10 +45,9 @@ class AgentManager:
             if isinstance(message, AIMessage):
                 if message.content is None or message.content in ["", " "]: continue
                 if think:
+                    filtered.append(("assistant", message.content))
+                else:
                     filtered.append(("assistant", message.pretty_repr()))
-                else: 
-                    text = self.remove_reasoning(message.pretty_repr())
-                    filtered.append(("assistant", text))
             elif isinstance(message, ToolMessage):
                 continue
             elif isinstance(message, HumanMessage):
@@ -56,19 +55,29 @@ class AgentManager:
             elif isinstance(message, SystemMessage):
                 filtered.append(("system", message.pretty_repr()))
             else:
-                raise Exception("message type not found")
+                raise Exception("invalid message type in filter_response")
         return filtered
     
     def generate_context(self, prompt: Prompt) -> list[tuple[str, str]]:
         self.context_manager.add_message(prompt.title, "human", prompt.text)
         context = self.context_manager.get_context(prompt.context_prompts, prompt.title)
         return context
+    
+    def invoke(self, agent, messages):
+        try_count = 1
+        while True:
+            try:
+                return agent.invoke(messages)
+            except Exception as e:
+                print(f"GENERATION ERROR {try_count}... ")
+                try_count += 1
+                if try_count > 2: raise e
 
     def generate_response(self, agent, messages: list[AnyMessage], prompt: Prompt) -> list[tuple[str,str]]:
         """Generate text using Ollama's API"""
         num_messages_before = len(messages)
         print("STARTED GENERATE... ")
-        response = agent.invoke({"messages": messages})
+        response = self.invoke(agent, {"messages": messages})
         print("ENDED GENERATE ")
         response_messages: list[AnyMessage] = response["messages"][num_messages_before:]
         filtered_response_messages = self.filter_response(response_messages, prompt.think)

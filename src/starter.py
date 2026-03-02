@@ -78,11 +78,9 @@ def setup():
         try:
             agents_manager.chat()
         except BrokenPipeError as e:
-            server.close()
             print(f"Client disconnected {e}")
             break
         except json.decoder.JSONDecodeError as e:
-            server.close()
             print(f"Client disconnected {e}")
             break
         job.reset()
@@ -93,8 +91,6 @@ while True:
     try:
         setup()
     except OSError as e:
-        server.close()
         print(f"Client disconnected {e}")
-        break
     except KeyboardInterrupt as e:
         exit()
