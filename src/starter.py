@@ -1,8 +1,10 @@
 import json
 from langchain.tools import tool
 
-from agents.manager import AgentManager
+from agents.agents import Agents
 from data.job import Job
+from data.vote import Vote
+from jobRunner import JobRunner
 from reporter import Reporter
 
 from connection.server import Server
@@ -10,7 +12,8 @@ from connection.server import Server
 server = Server()
 
 def setup():
-    model, agents_dict, job_dict = server.accept_work()
+    multi_agent_model, model, agents_dict, job_dict = server.accept_work()
+    vote = Vote()
     job = Job(job_dict)
     reporter = Reporter(server.send_function)
     reporter.commit("existing changes")
@@ -57,13 +60,13 @@ def setup():
     @tool("reject", description="USE THIS TOOL TO TELL THE USER THAT YOU REJECT")
     def reject() -> str:
         """USE THIS TOOL TO TELL THE USER YOUR DECISION TO REJECT."""
-        job.add_vote(False)
+        vote.add_vote(False)
         return "DECISION RECEIVED" # "STOP_45F" # YOU WILL RECEIVE INSTRUCTIONS IN THE NEXT USER MESSAGE
 
     @tool("approve", description="USE THIS TOOL TO TELL THE USER THAT YOU APPROVE")
     def approve():
         """USE THIS TOOL TO TELL THE USER YOUR DECISION TO APPROVE."""
-        job.add_vote(True)
+        vote.add_vote(True)
         return "DECISION RECEIVED" # "STOP_45F"
 
     tools_dict = {
@@ -74,15 +77,27 @@ def setup():
 
     i = 0
     while i < job.numero_esecuzioni:
-        agents_manager = AgentManager(model, reporter, job, agents_dict, tools_dict)
+        orchestrator_prompt_template = f"Available agents:\n{str(agents_dict)}"+"""\n
+Current task state:
+{
+    "task": "[task]",
+    "max-steps": 10,
+    "current-step": [step],
+    "history": [history]
+}
+
+Decide the next action as JSON only.
+Do not do too much at same time.
+Be sure to validate work and check correctness before proceeding.
+Respond ONLY with a VALID JSON."""
+        agents = Agents(agents_dict, tools_dict, multi_agent_model, model)
+        agents_manager = JobRunner(agents, reporter, job, orchestrator_prompt_template, vote)
         try:
-            agents_manager.chat()
+            agents_manager.run_job()
         except BrokenPipeError as e:
-            server.close()
             print(f"Client disconnected {e}")
             break
         except json.decoder.JSONDecodeError as e:
-            server.close()
             print(f"Client disconnected {e}")
             break
         job.reset()
@@ -93,8 +108,6 @@ while True:
     try:
         setup()
     except OSError as e:
-        server.close()
         print(f"Client disconnected {e}")
-        break
     except KeyboardInterrupt as e:
         exit()

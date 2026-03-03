@@ -35,19 +35,18 @@ class Reporter:
     
     # Logs
 
-    def write_in_response(self, content: str | list[tuple[str, str]]):
+    def log_in_response(self, content: str | list[tuple[str, str]]):
         message = { "command": "response", "content": content }
         self.send_function(message)
 
     def log_context(self, prompt_title, messages: list[tuple[str, str]]):
+        prompt_title = prompt_title.replace("/", "-")
         message = { "command": "context", "prompt_title": prompt_title, "context": messages }
         self.send_function(message)
 
     def log_settings_in_response(self, settings):
-        self.write_in_response(json.dumps(settings.json, indent=4))
+        self.log_in_response(json.dumps(settings.json, indent=4))
 
     def log_prompt_in_response(self, prompt: Prompt):
         print(str(prompt))
-        self.write_in_response(str(prompt))
-
-    
+        self.log_in_response(str(prompt))

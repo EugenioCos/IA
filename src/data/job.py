@@ -1,23 +1,29 @@
 import json
 
 from data.prompt import Prompt
+from data.context import Context
 
 class Job:
 
-    ia_approve_count = 0
-    ia_reject_count = 0
-    prompts: dict[str, Prompt] = {}
-    prompts_order_int_key: dict[str, int] = {}
-    prompts_order_title_key: dict[str, int] = {}
-    current = 0
-
     def __init__(self, job_dic):
+        self.prompts: dict[str, Prompt] = {}
+        self.prompts_order_int_key: dict[str, int] = {}
+        self.prompts_order_title_key: dict[str, int] = {}
+        self.current = 0
         self.numero_esecuzioni = job_dic["executions_count"]
-        for i, prompt_dict in enumerate(job_dic["prompts"]):
-            prompt =  Prompt(prompt_dict)
-            self.prompts.update({prompt.title: prompt})
-            self.prompts_order_title_key.update({prompt.title: i})
-            self.prompts_order_int_key.update({i: prompt.title})
+        self.context = Context()
+        for prompt_dict in job_dic["prompts"]:
+            self.add_prompt(prompt_dict)
+
+    # Prompts list
+
+    def add_prompt(self, prompt_dict):
+        prompt =  Prompt(prompt_dict)
+        i = len(self.prompts)
+        self.prompts.update({prompt.title: prompt})
+        self.prompts_order_title_key.update({prompt.title: i})
+        self.prompts_order_int_key.update({i: prompt.title})
+        self.context.add_context(prompt.title, [])
 
     def get_prompt(self):
         if(self.current >= len(self.prompts)):
@@ -28,6 +34,8 @@ class Job:
     def get_prompts_list(self):
         return list(self.prompts.keys())
     
+    # Flow control
+
     def next(self):
         self.current = self.current + 1
     
@@ -39,17 +47,3 @@ class Job:
 
     def end(self):
         self.current = 100000
-
-    def add_vote(self, is_approve: bool):
-        if is_approve: self.ia_approve_count = self.ia_approve_count + 1
-        else: self.ia_reject_count = self.ia_reject_count + 1
-
-    def has_decided(self) -> bool:
-        return (self.ia_approve_count + self.ia_reject_count) > 0
-
-    def get_decision(self) -> bool:
-        print(f"Approvations_count: {self.ia_approve_count}, rejects_count: {self.ia_reject_count}")
-        decision = self.ia_reject_count < self.ia_approve_count
-        self.ia_approve_count = 0
-        self.ia_reject_count = 0
-        return decision
