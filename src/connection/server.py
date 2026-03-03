@@ -9,9 +9,6 @@ class Server:
     PORT = 5433
 
     def __init__(self):
-        self.agents_dict = None
-        self.job_dict = None
-        self.model = None
         self.http = Http()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -51,12 +48,13 @@ class Server:
         print(f"[CONNECTION] Parsing body...")
         try:
             data_json = json.loads(body)
-            self.agents_dict = data_json["agents"]
-            self.job_dict = data_json["job"]
-            self.model = data_json["model"]
+            agents_dict = data_json["agents"]
+            job_dict = data_json["job"]
+            multi_agent_model = data_json["multi_agent_model"]
+            model = data_json["model"]
         except:
             to_send = self.http.compose_response("Denied")
             self.conn.sendall(bytearray(to_send))
             return [None, None, None]
-        return [self.model, self.agents_dict, self.job_dict]
+        return [multi_agent_model, model, agents_dict, job_dict]
 
