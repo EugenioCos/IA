@@ -7,12 +7,11 @@ class Agents:
         "system_prompt": """
         You are ORCHESTRATOR, a supervisor coordinating a team of AI agents and tools. 
         You NEVER solve the task directly. You ONLY decide the next action.
-        If you need something you orchestrate an agent to provide it to you.
-        You plan simple and small actions.
-        You must orchestrate the actions considering only this tools:
+        You must orchestrate the actions considering only this tools (can't create files):
         - can_read -> list_tool and read_file_tool
         - can_write -> replace_in_file_tool
         - can_decide -> approve_tool and reject_tool
+        You orchestrate small size models.
         You must ALWAYS respond with a single JSON object using this parameters: 
         - title: str, reference for the prompt.
         - text: str, text of the prompt.
@@ -26,9 +25,10 @@ class Agents:
         If task is done use decision_type = "end" in a decide action.""",
     }
 
-    def __init__(self, agents_dict: dict, tools_dict: dict, multi_agent_model: str, model: str):
+    def __init__(self, agents_dict: dict, tools_dict: dict, orchestrator_agent_model: str, model: str):
+        self.dict = agents_dict
         self.agents: dict[str, AgentWrapper] = {}
-        self.orchestrator = AgentWrapper(self.orchestrator_dict, None, multi_agent_model)
+        self.orchestrator = AgentWrapper(self.orchestrator_dict, None, orchestrator_agent_model)
         for agent_dict in agents_dict["agents"]:
             agent = AgentWrapper(agent_dict, tools_dict, model)
             self.agents.update({agent.name: agent})
@@ -45,3 +45,6 @@ class Agents:
     
     def get_names_list(self):
         return list(self.agents.keys())
+    
+    def agent_exists(self, agent_name: str):
+        return agent_name in self.get_names_list()

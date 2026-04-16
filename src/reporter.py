@@ -33,6 +33,10 @@ class Reporter:
         message = { "command": "revert_commit"}
         return self.send_function(message)
     
+    def ask_to_user(self, request: str):
+        message = { "command": "ask_to_user", "request": request}
+        return self.send_function(message)
+    
     # Logs
 
     def log_in_response(self, content: str | list[tuple[str, str]]):

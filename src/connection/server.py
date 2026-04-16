@@ -50,11 +50,11 @@ class Server:
             data_json = json.loads(body)
             agents_dict = data_json["agents"]
             job_dict = data_json["job"]
-            multi_agent_model = data_json["multi_agent_model"]
+            orchestrator_agent_model = data_json["multi_agent_model"]
             model = data_json["model"]
         except:
             to_send = self.http.compose_response("Denied")
             self.conn.sendall(bytearray(to_send))
             return [None, None, None]
-        return [multi_agent_model, model, agents_dict, job_dict]
+        return [orchestrator_agent_model, model, agents_dict, job_dict]
 

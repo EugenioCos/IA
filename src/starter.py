@@ -12,7 +12,7 @@ from connection.server import Server
 server = Server()
 
 def setup():
-    multi_agent_model, model, agents_dict, job_dict = server.accept_work()
+    orchestrator_agent_model, model, agents_dict, job_dict = server.accept_work()
     vote = Vote()
     job = Job(job_dict)
     reporter = Reporter(server.send_function)
@@ -77,21 +77,8 @@ def setup():
 
     i = 0
     while i < job.numero_esecuzioni:
-        orchestrator_prompt_template = f"Available agents:\n{str(agents_dict)}"+"""\n
-Current task state:
-{
-    "task": "[task]",
-    "max-steps": 10,
-    "current-step": [step],
-    "history": [history]
-}
-
-Decide the next action as JSON only.
-Do not do too much at same time.
-Be sure to validate work and check correctness before proceeding.
-Respond ONLY with a VALID JSON."""
-        agents = Agents(agents_dict, tools_dict, multi_agent_model, model)
-        agents_manager = JobRunner(agents, reporter, job, orchestrator_prompt_template, vote)
+        agents = Agents(agents_dict, tools_dict, orchestrator_agent_model, model)
+        agents_manager = JobRunner(agents, reporter, job, vote)
         try:
             agents_manager.run_job()
         except BrokenPipeError as e:

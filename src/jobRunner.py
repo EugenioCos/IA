@@ -1,27 +1,30 @@
 import json
 
 from agents.invoker import Invoker
+from agents.userAgent import UserAgent
 from reporter import Reporter
 from data.job import Job
 from data.prompt import Prompt
 from data.vote import Vote
 from agents.agents import Agents
+from agents.orchestratorAgent import OrchestratorAgent
 
 class JobRunner:
 
-    def __init__(self, agents: Agents, reporter: Reporter, job: Job, orc_prompt_template: str, vote: Vote):
+    def __init__(self, agents: Agents, reporter: Reporter, job: Job, vote: Vote):
         self.invoker = Invoker()
         self.agents = agents
+        self.orchestratorAgent = OrchestratorAgent(agents.dict)
+        self.userAgent = UserAgent(reporter, vote)
         self.reporter = reporter
         self.job = job
-        self.orc_prompt_template = orc_prompt_template
         self.vote = vote
     
     def generate_context(self, job: Job, sub_job: Job=None) -> list[tuple[str, str]]:
         prompt: Prompt = job.get_prompt()
         if sub_job is not None:
             job.context.reset_context([prompt.title])
-            text = self.orc_prompt_template.replace("[task]", prompt.text)
+            text = self.OrchestratorAgent.orc_prompt_template.replace("[task]", prompt.text)
             text = text.replace("[step]", str(sub_job.context.size()))
             text = text.replace("[history]", str(sub_job.context.summarize()))
         else: text = prompt.text
@@ -49,39 +52,21 @@ class JobRunner:
         self.reporter.log_in_response(resp_messages) # log response
         print("Prompt done")
         return resp_messages
-
-    def call_orchestrator(self, sub_job: Job):
-        while True:
-            orchestrator_response = self.call_agent(self.job, sub_job)
-            try:
-                prompt_dict = json.loads(orchestrator_response[0][1])
-                break
-            except json.JSONDecodeError as e:
-                print("Orchestrator response decoding error")
-
-        sub_job.add_prompt(prompt_dict)
     
+    def run_prompt(self, job: Job):
+        prompt = job.get_prompt()
+        if prompt.agent_name == "multi-agent":
+            self.orchestratorAgent.run_orchestrator_agent(self)
+        elif prompt.agent_name == "user":
+            self.userAgent.run_user_agent(job)
+        else:
+            self.call_agent(job)
+            self.apply_prompt_flow(job)
+
     def run_job(self):
         while self.job.get_prompt():
-            # Preparazione
-            prompt = self.job.get_prompt()
-            if prompt.agent_name == "multi-agent":
-                self.run_multi_agent()
-            else:
-                self.call_agent(self.job)
-                self.apply_prompt_flow(self.job)
-
-    def run_multi_agent(self):
-        sub_job_dict = {"executions_count": 1, "prompts": []}
-        sub_job = Job(sub_job_dict)
-        self.call_orchestrator(sub_job)
-        while(sub_job.get_prompt()):
-            # Call sub-agent
-            self.call_agent(sub_job)
-            self.apply_prompt_flow(sub_job)
-            # Call orchestrator
-            self.call_orchestrator(sub_job)
-        print("Multi agent prompt done")
+            self.run_prompt()
+            self.job.next()
 
     def apply_prompt_flow(self, job: Job):
         prompt: Prompt = job.get_prompt()
