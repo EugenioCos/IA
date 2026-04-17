@@ -1,42 +1,49 @@
 import json
 
-from data.settings import Settings
 from data.prompt import Prompt
+from data.context import Context
 
 class Job:
 
-    ia_wants_terminate = False
-    prompts: list[Prompt] = []
-    current = 0
+    def __init__(self, job_dic):
+        self.prompts: dict[str, Prompt] = {}
+        self.prompts_order_int_key: dict[str, int] = {}
+        self.prompts_order_title_key: dict[str, int] = {}
+        self.current = 0
+        self.numero_esecuzioni = job_dic["executions_count"]
+        self.context = Context()
+        for prompt_dict in job_dic["prompts"]:
+            self.add_prompt(prompt_dict)
 
-    def __init__(self, settings: Settings):
-        try:
-            data = json.load(open(f"jobs/{settings.job_name}.json", "r"))
-        except Exception as e:
-            raise Exception(f"Invalid job, Exception: {str(e)}")
-        
-        self.root = data["root"]
-        for prompt in data["prompts"]:
-            text = prompt["text"]
-            think = prompt["think"]
-            commit = prompt["commit"]
-            permit_end = prompt["permit_end"]
-            post_flow = prompt["post_flow"]
-            context = prompt["context"]
-            tools = prompt["tools"]
-            self.prompts.append(Prompt(text, think, commit, permit_end, post_flow, context, tools))
+    # Prompts list
+
+    def add_prompt(self, prompt_dict):
+        prompt =  Prompt(prompt_dict)
+        i = len(self.prompts)
+        self.prompts.update({prompt.title: prompt})
+        self.prompts_order_title_key.update({prompt.title: i})
+        self.prompts_order_int_key.update({i: prompt.title})
+        self.context.add_context(prompt.title, [])
 
     def get_prompt(self):
-        if(self.current == len(self.prompts)):
+        if(self.current >= len(self.prompts)):
             return None
-        return self.prompts[self.current]
+        prompt_index = self.prompts_order_int_key[self.current]
+        return self.prompts.get(prompt_index)
     
+    def get_prompts_list(self):
+        return list(self.prompts.keys())
+    
+    # Flow control
+
     def next(self):
         self.current = self.current + 1
     
-    def go_back(self, diff):
-        save = self.current
-        while self.current - save != diff:
-            self.current = self.current - 1
-        
+    def set_current(self, title: str):
+        self.current = self.prompts_order_title_key[title]
 
+    def reset(self):
+        self.current = 0
+
+    def end(self):
+        self.current = 100000

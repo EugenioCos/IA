@@ -1,9 +1,4 @@
-response/
-settings.json
-Archivio.zip
-response.md
-venv/
-__pycache__/
+venv
+__pycache__
 .DS_Store
-jobs/*
-workspace/
+Modelfile
